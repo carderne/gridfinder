@@ -17,7 +17,7 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import save_raster, clip_line_poly
+from gridfinder._util import clip_line_poly
 
 def filter_func(i, j):
     """
