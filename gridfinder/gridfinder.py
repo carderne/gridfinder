@@ -40,15 +40,15 @@ def get_costs(costs_in):
     return costs
 
 
-def optimise(targets, costs, start):
+def optimise_generator(targets, costs, start):
     """
 
     """
     
     counter = 0
+    progress = 0
     max_cells = targets.shape[0] * targets.shape[1]
     
-    #print(roads)
     max_i = costs.shape[0]
     max_j = costs.shape[1]    
     
@@ -126,13 +126,36 @@ def optimise(targets, costs, start):
                     else:
                         #print('NEW CELL at', next_loc, '  DIST', next_dist)
                         counter += 1
-                        handle.update(f'{counter}/{max_cells}')
+
+
+                        progress_new = 100 * counter/max_cells
                         heappush(halo, [next_dist, next_loc])
                         visited[next_loc] = 1
                         dist[next_loc] = next_dist
                         prev[next_loc] = current_loc
+
+                        if int(progress_new) > int(progress):
+                            progress = progress_new
+                            handle.update(f'{progress:.2f}%')
+
+                            yield np.copy(dist)
                         
-                        if counter > 100000:
-                            return dist, prev, visited
+                        #if counter > 100000:
+                        #    return dist
                     
-    return dist, prev, visited
+    yield np.copy(dist)
+
+
+def optimise(targets, costs, start):
+    """
+
+    """
+
+    generator = optimise_generator(targets, costs, start)
+
+    dist = None
+    for dist in generator:
+        pass
+
+    return dist
+
