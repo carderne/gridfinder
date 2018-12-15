@@ -40,7 +40,23 @@ def get_costs(costs_in):
     return costs
 
 
-def optimise_generator(targets, costs, start, display_progress=False, use_direction=True):
+def fix_shapes(targets, costs):
+    """
+    optimise won't work if the shapes aren't identical
+    ACTUALLY I THINK IT MIGHT WHO KNOWS...
+    """
+
+    if targets.shape == costs.shape:
+        return targets, costs
+    
+    else:
+        # figure out how shape is different
+        # use np.delete to get them the same?
+        # carr = np.delete(carr, [0, 1], 0) # delete first two rows
+        # carr = np.delete(carr, [0, 1], 1) # delete first two columns
+        pass
+
+def optimise(targets, costs, start, display_progress=False, use_direction=True):
     """
 
     """
@@ -155,20 +171,18 @@ def optimise_generator(targets, costs, start, display_progress=False, use_direct
                         else:
                             prev[next_loc] = current_loc
 
-                        if int(progress_new) > int(progress):
+                        if int(progress_new*10) > int(progress*10):
                             progress = progress_new
                             if display_progress:
                                 handle.update(f'{progress:.2f}%')
 
-                            yield np.copy(dist)
-                        
-                        #if counter > 100000:
-                        #    return dist
+                            #yield np.copy(dist)
                     
-    yield np.copy(dist)
+    #yield np.copy(dist)
+    return dist
 
 
-def optimise(targets, costs, start, display_progress=False, use_direction=True):
+def optimise_old(targets, costs, start, display_progress=False, use_direction=True):
     """
 
     """

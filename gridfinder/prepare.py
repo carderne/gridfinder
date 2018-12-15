@@ -1,3 +1,4 @@
+import os
 from math import sqrt
 from pathlib import Path
 import json
@@ -19,10 +20,35 @@ from rasterio.warp import reproject, Resampling
 import geopandas as gpd
 from gridfinder._util import clip_line_poly
 
+def merge_rasters(folder, percentile=70):
+    """
+    Merge a set of monthly rasters keeping the nth percentile value.
+    Used to remove transient features from time-series data.
+    """
+
+    affine = None
+    rasters = []
+
+    for file in os.listdir(folder):
+        if file.endswith('.tif'):
+            ntl_rd = rasterio.open(os.path.join(folder, file))
+            rasters.append(ntl_rd.read(1))
+            
+            if not affine:
+                affine = ntl_rd.transform
+
+    raster_arr = np.array(rasters)
+
+    raster_merged = np.nanpercentile(raster_arr, percentile, axis=0)
+
+    return raster_merged, affine
+
+
 def filter_func(i, j):
     """
 
     """
+
     d_rows = abs(i - 20)
     d_cols = abs(j - 20)
     d = sqrt(d_rows**2 + d_cols**2)
