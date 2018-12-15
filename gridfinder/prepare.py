@@ -55,7 +55,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=create_filter(), threshold=2.1, upsam
     aoi = gpd.read_file(aoi_in)
 
     coords = [json.loads(aoi.to_json())['features'][0]['geometry']]
-    ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True)
+    ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
 
     if ntl.ndim == 3:
         ntl = ntl[0]
