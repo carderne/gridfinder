@@ -89,15 +89,15 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=create_filter(), threshold=2.1, upsam
     ntl_convolved = signal.convolve2d(ntl, ntl_filter, mode='same')
     ntl_filtered = ntl - ntl_convolved + 2
 
-    with rasterio.Env():
-        ntl_interp = np.empty(shape=(1,  # same number of bands
+    ntl_interp = np.empty(shape=(1,  # same number of bands
                                 round(ntl.shape[0] * upsample_by),
                                 round(ntl.shape[1] * upsample_by)))
 
-        # adjust the new affine transform to the 150% smaller cell size
-        newaff = Affine(affine.a / upsample_by, affine.b, affine.c,
+    # adjust the new affine transform to the 150% smaller cell size
+    newaff = Affine(affine.a / upsample_by, affine.b, affine.c,
                         affine.d, affine.e / upsample_by, affine.f)
 
+    with rasterio.Env():
         reproject(
             ntl_filtered, ntl_interp,
             src_transform = affine,
@@ -106,7 +106,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=create_filter(), threshold=2.1, upsam
             dst_crs = {'init': 'epsg:4326'},
             resampling = Resampling.bilinear)
         
-        ntl_interp = ntl_interp[0]
+    ntl_interp = ntl_interp[0]
 
     ntl_thresh = np.empty_like(ntl_interp)
     ntl_thresh[:] = ntl_interp[:]
