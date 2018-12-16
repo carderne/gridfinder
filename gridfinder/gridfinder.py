@@ -56,7 +56,7 @@ def fix_shapes(targets, costs):
         # carr = np.delete(carr, [0, 1], 1) # delete first two columns
         pass
 
-def optimise(targets, costs, start, display_progress=False, use_direction=True):
+def optimise(targets, costs, start, display_progress=False):
     """
 
     """
@@ -70,43 +70,35 @@ def optimise(targets, costs, start, display_progress=False, use_direction=True):
     
     visited = np.zeros_like(costs)
     dist = np.full_like(costs, np.nan)
-    if use_direction:
-        prev = np.full_like(costs, np.nan)
-    else:
-        prev = np.full_like(costs, np.nan, dtype=object)
+    prev = np.full_like(costs, np.nan, dtype=object)
 
     dist[start] = 0
     
     #       dist, loc
-    halo = [[0, start]]
-    heapify(halo)
+    queue = [[0, start]]
+    heapify(queue)
     
     def zero_and_heap_path(loc):
         if not dist[loc] == 0:
             dist[loc] = 0
             visited[loc] = 1
-            heappush(halo, [0, loc])
 
-            if use_direction:
-                prev_loc = get_location(at=loc, direction=prev[loc])
-            else:
-                prev_loc = prev[loc]
+            heappush(queue, [0, loc])
+            prev_loc = prev[loc]
 
             if type(prev_loc) == tuple:
                 zero_and_heap_path(prev_loc)
     
     if display_progress:
         handle = display(Markdown(''), display_id=True)
-    while len(halo):
-        current = heappop(halo)       
+    while len(queue):
+        current = heappop(queue)
         current_loc = current[1]
         current_i = current_loc[0]
         current_j = current_loc[1]
         current_dist = dist[current_loc]
         
-        #print()
-        #print('CURRENT', current, 'DIST', current_dist)
-        
+        #print('\nCURRENT', current, 'DIST', current_dist, 'LEN', len(queue))
         for x in range(-1,2):
             for y in range(-1,2):
                 next_i = current_i + x
@@ -124,20 +116,14 @@ def optimise(targets, costs, start, display_progress=False, use_direction=True):
                 # skip if we've already set dist to 0
                 if dist[next_loc] == 0:
                     continue
-
-                if use_direction:
-                    dir_prev = get_direction(at=next_loc, to=current_loc)
                 
                 # if the location is connected
                 if targets[next_loc]:
-                    if use_direction:
-                        prev[next_loc] = dir_prev
-                    else:
-                        prev[next_loc] = current_loc
+                    prev[next_loc] = current_loc
                     zero_and_heap_path(next_loc)
                     #print('FOUND CONNECTED at', next_loc)
                 
-                # otherwise it's a normal halo cell
+                # otherwise it's a normal queue cell
                 else:
                     dist_add = costs[next_loc]
                     if x == 0 or y == 0: # if this cell is a square up/down or left/right
@@ -148,123 +134,24 @@ def optimise(targets, costs, start, display_progress=False, use_direction=True):
                     next_dist = current_dist + dist_add
 
                     if visited[next_loc]:
-                        if next_dist < dist[next_loc]:
+                        if next_dist + 0.4 < dist[next_loc]:
                             #print('REVISITING at', next_loc, '  NEW DIST', next_dist)
                             dist[next_loc] = next_dist
-                            if use_direction:
-                                prev[next_loc] = dir_prev
-                            else:
-                                prev[next_loc] = current_loc
-                            heappush(halo, [next_dist, next_loc])
+                            prev[next_loc] = current_loc
+                            heappush(queue, [next_dist, next_loc])
 
                     else:
                         #print('NEW CELL at', next_loc, '  DIST', next_dist)
-                        counter += 1
-
-
-                        progress_new = 100 * counter/max_cells
-                        heappush(halo, [next_dist, next_loc])
+                        heappush(queue, [next_dist, next_loc])
                         visited[next_loc] = 1
                         dist[next_loc] = next_dist
-                        if use_direction:
-                            prev[next_loc] = dir_prev
-                        else:
-                            prev[next_loc] = current_loc
+                        prev[next_loc] = current_loc
 
-                        if int(progress_new*10) > int(progress*10):
+                        progress_new = 100 * counter/max_cells
+                        if int(progress_new) > int(progress):
                             progress = progress_new
+                            print(progress)
                             if display_progress:
                                 handle.update(f'{progress:.2f}%')
-
-                            #yield np.copy(dist)
                     
-    #yield np.copy(dist)
     return dist
-
-
-def optimise_old(targets, costs, start, display_progress=False, use_direction=True):
-    """
-
-    """
-
-    generator = optimise_generator(targets, costs, start, display_progress)
-
-    dist = None
-    for dist in generator:
-        pass
-
-    return dist
-
-
-def get_direction(at=None, to=None):
-    """
-    Direction based on this: (H is where we're at)
-    5  4  3
-    6  H  2
-    7  0  1
-    """
-
-    at_x = at[1]
-    at_y = at[0]
-    
-    to_x = to[1]
-    to_y = to[0]
-    
-    diff_x = to_x - at_x
-    diff_y = to_y - at_y
-    
-    if diff_x == 0 and diff_y == 1:
-        return 0
-    elif diff_x == 1 and diff_y == 1:
-        return 1
-    elif diff_x == 1 and diff_y == 0:
-        return 2
-    elif diff_x == 1 and diff_y == -1:
-        return 3
-    elif diff_x == 0 and diff_y == -1:
-        return 4
-    elif diff_x == -1 and diff_y == -1:
-        return 5
-    elif diff_x == -1 and diff_y == 0:
-        return 6
-    elif diff_x == -1 and diff_y == 1:
-        return 7
-
-
-def get_location(at=None, direction=None):
-    """
-    Direction based on this: (H is where we're at)
-    5  4  3
-    6  H  2
-    7  0  1
-    """
-
-    diff_x = None
-    diff_y = None
-    
-    if direction == 0:
-        diff_x = 0
-        diff_y = 1
-    elif direction == 1:
-        diff_x = 1
-        diff_y = 1
-    elif direction == 2:
-        diff_x = 1
-        diff_y = 0
-    elif direction == 3:
-        diff_x = 1
-        diff_y = -1
-    elif direction == 4:
-        diff_x = 0
-        diff_y = -1
-    elif direction == 5:
-        diff_x = -1
-        diff_y = -1
-    elif direction == 6:
-        diff_x = -1
-        diff_y = 0
-    elif direction == 7:
-        diff_x = -1
-        diff_y = 1
-        
-    return (at[0] + diff_y, at[1] + diff_x)
