@@ -16,55 +16,27 @@ import rasterio
 
 from IPython.display import display, Markdown
 
-def get_targets(targets_in):
+def get_targets_costs(targets_in, costs_in):
     """
 
     """
     targets_ra = rasterio.open(targets_in)
     targets = targets_ra.read(1)
-    transform = targets_ra.transform
+    
+    costs_ra = rasterio.open(costs_in)
+    costs = costs_ra.read(1)
 
     target_list = np.argwhere(targets == 1.)
     start = tuple(target_list[0].tolist())
 
-    return targets, transform, start
+    return targets, costs, start
 
-
-def get_costs(costs_in):
-    """
-
-    """
-    costs_ra = rasterio.open(costs_in)
-    costs = costs_ra.read(1)
-
-    return costs
-
-
-def fix_shapes(targets, costs):
-    """
-    optimise won't work if the shapes aren't identical
-    ACTUALLY I THINK IT MIGHT WHO KNOWS...
-    """
-
-    if targets.shape == costs.shape:
-        return targets, costs
-    
-    else:
-        # figure out how shape is different
-        # use np.delete to get them the same?
-        # carr = np.delete(carr, [0, 1], 0) # delete first two rows
-        # carr = np.delete(carr, [0, 1], 1) # delete first two columns
-        pass
 
 def optimise(targets, costs, start, display_progress=False):
     """
 
     """
-    
-    counter = 0
-    progress = 0
-    max_cells = targets.shape[0] * targets.shape[1]
-    
+        
     max_i = costs.shape[0]
     max_j = costs.shape[1]    
     
@@ -90,7 +62,11 @@ def optimise(targets, costs, start, display_progress=False):
                 zero_and_heap_path(prev_loc)
     
     if display_progress:
+        counter = 0
+        progress = 0
+        max_cells = targets.shape[0] * targets.shape[1]
         handle = display(Markdown(''), display_id=True)
+
     while len(queue):
         current = heappop(queue)
         current_loc = current[1]
@@ -147,11 +123,11 @@ def optimise(targets, costs, start, display_progress=False):
                         dist[next_loc] = next_dist
                         prev[next_loc] = current_loc
 
-                        progress_new = 100 * counter/max_cells
-                        if int(progress_new) > int(progress):
-                            progress = progress_new
-                            print(progress)
-                            if display_progress:
-                                handle.update(f'{progress:.2f}%')
+                        if display_progress:
+                            counter += 1
+                            progress_new = 100 * counter/max_cells
+                            if int(progress_new) > int(progress):
+                                progress = progress_new
+                                handle.update(f'{progress:.2f} %')
                     
     return dist
