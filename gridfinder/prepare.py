@@ -18,7 +18,32 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import clip_line_poly
+from gridfinder._util import clip_line_poly, save_raster
+
+
+def clip_rasters(folder_in, folder_out, aoi_in):
+    """
+    Read continental rasters one at a time, clip and save
+    """
+
+    if isinstance(aoi_in, gpd.GeoDataFrame):
+        aoi = aoi_in
+    else:
+        aoi = gpd.read_file(aoi_in)
+
+    coords = [json.loads(aoi.to_json())['features'][0]['geometry']]
+
+    for file in os.listdir(folder_in):
+        if file.endswith('.tif'):
+            print(f'Doing {file}')
+            ntl_rd = rasterio.open(os.path.join(folder_in, file))
+            ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
+
+            if ntl.ndim == 3:
+                ntl = ntl[0]
+                
+            save_raster(folder_out / file, ntl, affine)
+
 
 def merge_rasters(folder, percentile=70):
     """
@@ -72,10 +97,18 @@ def create_filter():
     return ntl_filter
 
 
-def prepare_ntl(ntl_in, aoi_in, ntl_filter=create_filter(), threshold=2.1, upsample_by=3):
+def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
     """
 
     """
+
+    if isinstance(aoi_in, gpd.GeoDataFrame):
+        aoi = aoi_in
+    else:
+        aoi = gpd.read_file(aoi_in)
+
+    if not ntl_filter:
+        ntl_filter = create_filter()
 
     ntl_big = rasterio.open(ntl_in)
     aoi = gpd.read_file(aoi_in)
@@ -119,8 +152,13 @@ def prepare_roads(roads_in, aoi_in, shape, affine):
     """
     
     """
+
+    if isinstance(aoi_in, gpd.GeoDataFrame):
+        aoi = aoi_in
+    else:
+        aoi = gpd.read_file(aoi_in)
+
     roads = gpd.read_file(roads_in)
-    aoi = gpd.read_file(aoi_in)
 
     roads['weight'] = 1
     roads.loc[roads['highway'] == 'motorway', 'weight'] = 1/10

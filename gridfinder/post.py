@@ -72,7 +72,10 @@ def accuracy(grid_in, guesses_in, aoi_in, buffer_amount=0.01):
 
     """
 
-    aoi = gpd.read_file(aoi_in)
+    if isinstance(aoi_in, gpd.GeoDataFrame):
+        aoi = aoi_in
+    else:
+        aoi = gpd.read_file(aoi_in)
 
     grid = gpd.read_file(grid_in)
     grid_clipped = clip_line_poly(grid, aoi)
