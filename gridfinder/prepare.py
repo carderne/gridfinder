@@ -111,7 +111,6 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
         ntl_filter = create_filter()
 
     ntl_big = rasterio.open(ntl_in)
-    aoi = gpd.read_file(aoi_in)
 
     coords = [json.loads(aoi.to_json())['features'][0]['geometry']]
     ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
