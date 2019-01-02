@@ -107,7 +107,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
     else:
         aoi = gpd.read_file(aoi_in)
 
-    if not ntl_filter:
+    if ntl_filter == None:
         ntl_filter = create_filter()
 
     ntl_big = rasterio.open(ntl_in)
