@@ -1,0 +1,4 @@
+gdal_translate to Int32
+r.null background value
+r.thin
+r.to.vect
