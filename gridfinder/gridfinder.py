@@ -3,6 +3,7 @@ from math import sqrt
 from pathlib import Path
 import json
 from heapq import heapify, heappush, heappop
+import pickle
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -21,6 +22,7 @@ def get_targets_costs(targets_in, costs_in):
 
     """
     targets_ra = rasterio.open(targets_in)
+    affine = targets_ra.transform
     targets = targets_ra.read(1)
     
     costs_ra = rasterio.open(costs_in)
@@ -29,7 +31,27 @@ def get_targets_costs(targets_in, costs_in):
     target_list = np.argwhere(targets == 1.)
     start = tuple(target_list[0].tolist())
 
-    return targets, costs, start
+    targets = targets.astype(np.int8)
+    costs = costs.astype(np.float16)
+
+    return targets, costs, start, affine
+
+
+def estimate_mem_use(targets, costs):
+    """
+    Estimate memory usage in GB
+    """
+
+    # make sure these match the ones used in optimise below
+
+    visited = np.zeros_like(targets, dtype=np.int8)
+    dist = np.full_like(costs, np.nan, dtype=np.float32)
+    prev = np.full_like(costs, np.nan, dtype=object)
+
+    est_mem_arr = [targets, costs, visited, dist, prev]
+    est_mem = len(pickle.dumps(est_mem_arr, -1))
+
+    return est_mem / 1e9
 
 
 def optimise(targets, costs, start, display_progress=False):
@@ -40,8 +62,12 @@ def optimise(targets, costs, start, display_progress=False):
     max_i = costs.shape[0]
     max_j = costs.shape[1]    
     
-    visited = np.zeros_like(costs)
-    dist = np.full_like(costs, np.nan)
+    visited = np.zeros_like(targets, dtype=np.int8)
+    dist = np.full_like(costs, np.nan, dtype=np.float32)
+
+    # want to set this to dtype='int32, int32'
+    # but then the if type(prev_loc) == tuple check will break
+    # becuas it gets instantiated with tuples
     prev = np.full_like(costs, np.nan, dtype=object)
 
     dist[start] = 0
