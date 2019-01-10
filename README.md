@@ -4,6 +4,7 @@ Algorithm for guessing MV grid network based on NTL.
 gridfinder uses NASA night time lights imagery to as an indicator of settlements/towns with grid electricity access. Then a minimum spanning tree is calculated for these connect points, using the Djikstra algorithm and using existing road networks as a cost function.
 
 The algorithm looks as follows in process, guessing the grid network for Uganda:
+
 [![Animated algorithm](gridfinder-animated.gif)]()
 
 There are more details on my [blog post](https://rdrn.me/night-time-lights-find-grid/).
