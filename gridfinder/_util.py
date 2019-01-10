@@ -1,10 +1,6 @@
 import os
-from pathlib import Path
-
-import numpy as np
 
 import rasterio
-import geopandas as gpd
 
 def save_raster(file, raster, affine):
    """
