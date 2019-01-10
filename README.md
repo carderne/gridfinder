@@ -30,15 +30,11 @@ gridfinder requires Python >= 3.5 with the following packages installed:
 
 **Install from GitHub**
 
-Downloads or clone the repository:
+Downloads or clone the repository and install the required packages (preferably in a virtual environment):
 
 ```
 git clone https://github.com/carderne/gridfinder.git
-```
-
-Then ``cd`` into the directory, and install the required packages into a virtual environment:
-
-```
+cd gridfinder
 pip install -r requirements.txt
 ```
 
