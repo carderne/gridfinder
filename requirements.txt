@@ -3,6 +3,3 @@ numpy>=1.2.0
 scikit-image>=0.14.1
 rasterio>=1.0.13
 geopandas>=0.4.0
-IPython
-matplotlib
-seaborn

@@ -24,9 +24,6 @@ gridfinder requires Python >= 3.5 with the following packages installed:
  - `scikit-image` >=0.14.1
  - `rasterio` >=1.0.13
  - `geopandas` >=0.4.0
- - `IPython`
- - `matplotlib`
- - `seaborn`
 
 **Install from GitHub**
 
