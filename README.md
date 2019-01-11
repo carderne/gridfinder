@@ -19,11 +19,24 @@ gridfinder requires the following data sources:
 **Requirements**
 
 gridfinder requires Python >= 3.5 with the following packages installed:
-
  - `numpy` >=1.2.0
  - `scikit-image` >=0.14.1
  - `rasterio` >=1.0.13
  - `geopandas` >=0.4.0
+
+These additional packages may be necessary depending on your configuration:
+ - `Rtree` >= 0.8.3
+ - `affine` >= 2.2.1
+ - `descartes`
+ - `Pillow` >= 5.3.0
+ - `pyproj` >= 1.9.5.1
+ - `pytz` >= 2018.7
+
+ And these for using an interactive notebook:
+ - `IPython`
+ - `jupyter`
+ - `matplotlib`
+ - `seaborn`
 
 **Install from GitHub**
 

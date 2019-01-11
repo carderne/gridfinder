@@ -1,4 +1,0 @@
-IPython
-jupyter
-matplotlib
-seaborn
