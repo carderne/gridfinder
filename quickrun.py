@@ -23,7 +23,9 @@ def main(country,
          percentile=DEFAULT_PERCENTILE,
          upsample=DEFAULT_UPSAMPLE,
          ntl_threshold=DEAFULT_THRESHOLD,
-         cutoff=DEFAULT_CUTOFF):
+         cutoff=DEFAULT_CUTOFF,
+         skip_ntl=False,
+         skip_roads=False):
 
     print(' - Running with')
     print('Country:', country)
@@ -57,28 +59,29 @@ def main(country,
     guess_out = folder_out / 'guess.tif'
     final_out = folder_out / 'guess.gpkg'
 
-    zip_file = download_path / f'Downloads/{country}_{percentile}_{upsample}_{threshold}_{cutoff}'
-
+    zip_file = download_path / f'{country}_{percentile}_{upsample}_{ntl_threshold}_{cutoff}'
     print(' - Done setup')
 
-    # Clip NTL rasters and calculate nth percentile values
-    clip_rasters(ntl_folder_in, ntl_folder_out, aoi)
-    raster_merged, affine = merge_rasters(ntl_folder_out, percentile=percentile)
-    save_raster(ntl_merged_out, raster_merged, affine)
-    print(' - Done NTL percentile')
+    if not skip_ntl:
+        # Clip NTL rasters and calculate nth percentile values
+        clip_rasters(ntl_folder_in, ntl_folder_out, aoi)
+        raster_merged, affine = merge_rasters(ntl_folder_out, percentile=percentile)
+        save_raster(ntl_merged_out, raster_merged, affine)
+        print(' - Done NTL percentile')
 
-    # Apply filter to NTL
-    ntl_filter = create_filter()
-    ntl, ntl_filtered, ntl_interp, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
-                                                                    threshold=ntl_threshold, upsample_by=upsample)
-    save_raster(ntl_thresh_out, ntl_thresh, affine)
-    print(' - Done filter')
+        # Apply filter to NTL
+        ntl_filter = create_filter()
+        ntl, ntl_filtered, ntl_interp, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
+                                                                        threshold=ntl_threshold, upsample_by=upsample)
+        save_raster(ntl_thresh_out, ntl_thresh, affine)
+        print(' - Done filter')
 
-    # Create roads raster
-    roads, roads_clipped, aoi, roads_raster, affine = prepare_roads(
-        roads_in, aoi, ntl_thresh.shape, affine)
-    save_raster(roads_out, roads_raster, affine)
-    print(' - Done roads')
+    if not skip_roads:
+        # Create roads raster
+        roads, roads_clipped, aoi, roads_raster, affine = prepare_roads(
+            roads_in, aoi, ntl_thresh.shape, affine)
+        save_raster(roads_out, roads_raster, affine)
+        print(' - Done roads')
 
     # Load targets/costs and find a start point
     targets, costs, start, affine = get_targets_costs(ntl_thresh_out, roads_out)
@@ -115,6 +118,9 @@ if __name__ == "__main__":
     parser.add_argument('--threshold', help='NTL values above this are considered electrified', type=float, default=DEAFULT_THRESHOLD)
     parser.add_argument('--cutoff', help='After the model run, dist values below this are considered grid', type=float, default=DEFAULT_CUTOFF)
 
+    parser.add_argument('--skip-ntl', help='Skip NTL steps', action='store_true')
+    parser.add_argument('--skip-roads', help='Skip roads step', action='store_true')
+
     args=parser.parse_args()
 
     start = timer()
@@ -123,7 +129,9 @@ if __name__ == "__main__":
          percentile=args.percentile,
          upsample=args.upsample,
          ntl_threshold=args.threshold,
-         cutoff=args.cutoff)
+         cutoff=args.cutoff,
+         skip_ntl=args.skip_ntl,
+         skip_roads=args.skip_roads)
 
     end = timer()
     elapsed = (end - start) / 60 # to get to minutes
