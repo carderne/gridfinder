@@ -34,9 +34,9 @@ def main(country,
     print()
 
     # Set file paths and clip AOI
-    data_path = Path('../data')
-    output_path = Path('../output')
-    download_path = Path('../download')
+    data_path = Path.home() / 'data'
+    output_path = Path.home() / 'output'
+    download_path = Path.home() / 'download'
 
     ntl_folder_in = data_path / 'ntl'
     roads_in = data_path / 'roads' / f'{country.lower()}.gpkg'
