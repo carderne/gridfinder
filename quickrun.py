@@ -34,14 +34,18 @@ def main(country,
     print()
 
     # Set file paths and clip AOI
-    ntl_folder_in = Path('NTL')
-    roads_in = Path('roads') / f'{country.lower()}.gpkg'
+    data_path = Path('../data')
+    output_path = Path('../output')
+    download_path = Path('../download')
 
-    aoi_in = 'gadm.gpkg'
+    ntl_folder_in = data_path / 'ntl'
+    roads_in = data_path / 'roads' / f'{country.lower()}.gpkg'
+    aoi_in = data_path / 'gadm.gpkg'
+
     aoi = gpd.read_file(aoi_in)
     aoi = aoi.loc[aoi['NAME_0'] == country]
 
-    folder_out = Path(country)
+    folder_out = output_path / country
     if not os.path.exists(folder_out):
         os.makedirs(folder_out)
 
@@ -52,6 +56,9 @@ def main(country,
     dist_out = folder_out / 'dist.tif'
     guess_out = folder_out / 'guess.tif'
     final_out = folder_out / 'guess.gpkg'
+
+    zip_file = download_path / f'Downloads/{country}_{percentile}_{upsample}_{threshold}_{cutoff}'
+
     print(' - Done setup')
 
     # Clip NTL rasters and calculate nth percentile values
@@ -95,7 +102,6 @@ def main(country,
     print(' - Done polygonize')
 
     # Zip for download
-    zip_file = Path(f'Downloads/{country}_{percentile}_{upsample}_{threshold}_{cutoff}')
     shutil.make_archive(zip_file, 'zip', folder_out)
     print(' - Done zip')
 
