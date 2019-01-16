@@ -44,7 +44,7 @@ def estimate_mem_use(targets, costs):
     return est_mem / 1e9
 
 
-def optimise(targets, costs, start, display_progress=False):
+def optimise(targets, costs, start, jupyter=False):
     """
 
     """
@@ -77,10 +77,10 @@ def optimise(targets, costs, start, display_progress=False):
             if type(prev_loc) == tuple:
                 zero_and_heap_path(prev_loc)
     
-    if display_progress:
-        counter = 0
-        progress = 0
-        max_cells = targets.shape[0] * targets.shape[1]
+    counter = 0
+    progress = 0
+    max_cells = targets.shape[0] * targets.shape[1]
+    if jupyter:
         handle = display(Markdown(''), display_id=True)
 
     while len(queue):
@@ -139,11 +139,14 @@ def optimise(targets, costs, start, display_progress=False):
                         dist[next_loc] = next_dist
                         prev[next_loc] = current_loc
 
-                        if display_progress:
-                            counter += 1
-                            progress_new = 100 * counter/max_cells
-                            if int(progress_new) > int(progress):
-                                progress = progress_new
-                                handle.update(f'{progress:.2f} %')
+                        counter += 1
+                        progress_new = 100 * counter/max_cells
+                        if int(progress_new) > int(progress):
+                            progress = progress_new
+                            message = f'{progress:.2f} %'
+                            if jupyter:
+                                handle.update(message)
+                            else:
+                                print(message)
                     
     return dist

@@ -1,4 +1,11 @@
-gdal_translate to Int32
-r.null background value
-r.thin
-r.to.vect
+1) Translate (convert format)
+Output data type: Int32
+
+2) r.null
+List of values to be set to NULL: 0
+
+3) r.thin
+Default values
+
+4) r.to.vect
+Feature type: line
