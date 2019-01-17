@@ -71,7 +71,7 @@ def main(country,
 
         # Apply filter to NTL
         ntl_filter = create_filter()
-        ntl, ntl_filtered, ntl_interp, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
+        _, _, _, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
                                                                         threshold=ntl_threshold, upsample_by=upsample)
         save_raster(ntl_thresh_out, ntl_thresh, affine)
         print(' - Done filter')
@@ -81,8 +81,8 @@ def main(country,
 
     def prep_roads():
         # Create roads raster
-        roads, roads_clipped, aoi, roads_raster, affine = prepare_roads(
-            roads_in, aoi, ntl_thresh.shape, affine)
+        _, _, aoi, roads_raster, affine = prepare_roads(
+            roads_in, aoi, ntl_thresh_out)
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
 

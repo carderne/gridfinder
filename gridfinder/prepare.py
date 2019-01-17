@@ -141,10 +141,14 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
 
     return ntl, ntl_filtered, ntl_interp, ntl_thresh, newaff
 
-def prepare_roads(roads_in, aoi_in, shape, affine):
+def prepare_roads(roads_in, aoi_in, ntl_in):
     """
     
     """
+
+    ntl_rd = rasterio.open(ntl_in)
+    shape = ntl_rd.read(1).shape
+    affine = ntl_rd.transform
 
     if isinstance(aoi_in, gpd.GeoDataFrame):
         aoi = aoi_in
