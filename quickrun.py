@@ -62,7 +62,7 @@ def main(country,
     zip_file = download_path / f'{country}_{percentile}_{upsample}_{ntl_threshold}_{cutoff}'
     print(' - Done setup')
 
-    if not skip_ntl:
+    def prep_ntl():
         # Clip NTL rasters and calculate nth percentile values
         clip_rasters(ntl_folder_in, ntl_folder_out, aoi)
         raster_merged, affine = merge_rasters(ntl_folder_out, percentile=percentile)
@@ -76,12 +76,18 @@ def main(country,
         save_raster(ntl_thresh_out, ntl_thresh, affine)
         print(' - Done filter')
 
-    if not skip_roads:
+    if not skip_ntl:
+        prep_ntl()
+
+    def prep_roads():
         # Create roads raster
         roads, roads_clipped, aoi, roads_raster, affine = prepare_roads(
             roads_in, aoi, ntl_thresh.shape, affine)
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
+
+    if not skip_roads:
+        prep_roads()
 
     # Load targets/costs and find a start point
     targets, costs, start, affine = get_targets_costs(ntl_thresh_out, roads_out)
