@@ -27,7 +27,7 @@ def main(country,
          skip_ntl=False,
          skip_roads=False):
 
-    print(' - Running with')
+    print(' - Running with:')
     print('Country:', country)
     print('Percentile:', percentile)
     print('Upsample:', upsample)
@@ -76,7 +76,9 @@ def main(country,
         save_raster(ntl_thresh_out, ntl_thresh, affine)
         print(' - Done filter')
 
-    if not skip_ntl:
+    if skip_ntl:
+        print(' - Skipping NTL steps')
+    else:
         prep_ntl()
 
     def prep_roads():
@@ -86,7 +88,9 @@ def main(country,
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
 
-    if not skip_roads:
+    if skip_roads:
+        print(' - Skipping roads steps')
+    else:
         prep_roads()
 
     # Load targets/costs and find a start point
@@ -113,6 +117,14 @@ def main(country,
     # Zip for download
     shutil.make_archive(zip_file, 'zip', folder_out)
     print(' - Done zip')
+
+    print(' - Done for:')
+    print('Country:', country)
+    print('Percentile:', percentile)
+    print('Upsample:', upsample)
+    print('Threshold:', ntl_threshold)
+    print('Cutoff:', cutoff)
+    print()
 
 
 if __name__ == "__main__":
@@ -141,4 +153,9 @@ if __name__ == "__main__":
 
     end = timer()
     elapsed = (end - start) / 60 # to get to minutes
+    print('Finished for', args)
     print('Time taken:', elapsed, 'minutes') # Time in seconds, e.g. 5.38091952400282
+
+    times = Path.home() / 'times.txt'
+    with times.open(mode='a') as f:
+        f.write(f'{args}\n{elapsed} minutes\n\n')
