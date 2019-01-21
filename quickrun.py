@@ -83,7 +83,7 @@ def main(country,
 
     def prep_roads():
         # Create roads raster
-        _, _, _, roads_raster, _ = prepare_roads(
+        _, _, _, roads_raster, affine = prepare_roads(
             roads_in, aoi, ntl_thresh_out)
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
