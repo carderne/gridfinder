@@ -7,8 +7,6 @@ The algorithm looks as follows in process, guessing the grid network for Uganda:
 
 [![Animated algorithm](gridfinder-animated.gif)]()
 
-There are more details on my [blog post](https://rdrn.me/night-time-lights-find-grid/).
-
 ## Input requirements
 gridfinder requires the following data sources:
 - NASA VIIRS data, monthly and annual composites available [here](https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html).
