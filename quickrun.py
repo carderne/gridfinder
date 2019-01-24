@@ -84,17 +84,15 @@ def main(country,
         save_raster(targets_out, ntl_thresh, affine)
         print(' - Done filter')
 
+        if drop_sites:
+            print(' - Droping zero population sites')
+            targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
+            save_raster(targets_out, targets_clean, affine)
+
     if skip_ntl:
         print(' - Skipping NTL steps')
     else:
         prep_ntl()
-
-    if drop_sites:
-        print(' - Droping zero population sites')
-        targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
-        save_raster(targets_out_clean, targets_clean, affine)
-        targets_out = targets_out_clean
-
 
     def prep_roads():
         # Create roads raster
