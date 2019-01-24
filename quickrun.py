@@ -10,7 +10,7 @@ import rasterio
 import geopandas as gpd
 
 from gridfinder._util import save_raster, clip_line_poly
-from gridfinder.prepare import clip_rasters, merge_rasters, create_filter, prepare_ntl, prepare_roads
+from gridfinder.prepare import clip_rasters, merge_rasters, create_filter, prepare_ntl, prepare_roads, drop_zero_pop
 from gridfinder.gridfinder import get_targets_costs, estimate_mem_use, optimise
 from gridfinder.post import threshold, accuracy, guess2geom
 
@@ -25,7 +25,8 @@ def main(country,
          ntl_threshold=DEAFULT_THRESHOLD,
          cutoff=DEFAULT_CUTOFF,
          skip_ntl=False,
-         skip_roads=False):
+         skip_roads=False,
+         drop_sites=True):
 
     print(' - Running with:')
     print('Country:', country)
@@ -41,6 +42,7 @@ def main(country,
     download_path = Path.home() / 'download'
 
     ntl_folder_in = data_path / 'ntl'
+    pop_in = data_path / 'ghs.tif'
     roads_in = data_path / 'roads' / f'{country.lower()}.gpkg'
     aoi_in = data_path / 'gadm.gpkg'
 
@@ -51,9 +53,9 @@ def main(country,
     if not os.path.exists(folder_out):
         os.makedirs(folder_out)
 
-    ntl_folder_out = folder_out / 'NTL_clipped'
+    ntl_folder_out = folder_out / 'ntl_clipped'
     ntl_merged_out = folder_out / 'ntl_merged.tif'
-    ntl_thresh_out = folder_out / 'ntl_thresh.tif'
+    targets_out = folder_out / 'targets.tif'
     roads_out = folder_out / 'roads.tif'
     dist_out = folder_out / 'dist.tif'
     guess_out = folder_out / 'guess.tif'
@@ -72,9 +74,14 @@ def main(country,
         # Apply filter to NTL
         ntl_filter = create_filter()
         _, _, _, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
-                                                                        threshold=ntl_threshold, upsample_by=upsample)
-        save_raster(ntl_thresh_out, ntl_thresh, affine)
+                                                                        threshold=ntl_threshold,
+                                                                        upsample_by=upsample)
+        save_raster(targets_out, ntl_thresh, affine)
         print(' - Done filter')
+
+        if drop_sites:
+            targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
+            save_raster(targets_out, targets_clean, affine)
 
     if skip_ntl:
         print(' - Skipping NTL steps')
@@ -94,7 +101,7 @@ def main(country,
         prep_roads()
 
     # Load targets/costs and find a start point
-    targets, costs, start, affine = get_targets_costs(ntl_thresh_out, roads_out)
+    targets, costs, start, affine = get_targets_costs(targets_out, roads_out)
     est_mem = estimate_mem_use(targets, costs)
     print(f'Estimated memory usage: {est_mem:.2f} GB')
     print(' - Done start point')
@@ -138,6 +145,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--skip-ntl', help='Skip NTL steps', action='store_true')
     parser.add_argument('--skip-roads', help='Skip roads step', action='store_true')
+    parser.add_argument('--drop-sites', help='Drop sites with no pop', action='store_true')
 
     args=parser.parse_args()
 
@@ -149,7 +157,8 @@ if __name__ == "__main__":
          ntl_threshold=args.threshold,
          cutoff=args.cutoff,
          skip_ntl=args.skip_ntl,
-         skip_roads=args.skip_roads)
+         skip_roads=args.skip_roads,
+         drop_sites=args.drop_sites)
 
     end = timer()
     elapsed = (end - start) / 60 # to get to minutes
