@@ -2,9 +2,7 @@
 *.pptx
 *.png
 *.mp4
-lesotho/
-tanzania/
-uganda/
+results/
 server/
 gridfinder_animated.ipynb
 
