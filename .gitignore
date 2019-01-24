@@ -1,8 +1,6 @@
 # Custom
-*.pptx
 *.png
 *.mp4
-results/
 server/
 gridfinder_animated.ipynb
 
