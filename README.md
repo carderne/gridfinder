@@ -12,6 +12,10 @@ gridfinder requires the following data sources:
 - NASA VIIRS data, monthly and annual composites available [here](https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html).
 - OSM highway data, most easily available using the [HOT Export Tool](https://export.hotosm.org/en/v3/), otherwise [BBBike](https://extract.bbbike.org/) or [geofabrik](https://download.geofabrik.de/), depending on your needs.
 
+## Model usage
+
+To get to grips with the API and steps in the model, open the Jupyter notebook `gridfinder.ipynb`. This repository  includes the input data needed to do a test run for Burundi, so it should be a matter of openening the notebook and running all cells.
+
 ## Installation
 
 **Requirements**
@@ -45,5 +49,3 @@ git clone https://github.com/carderne/gridfinder.git
 cd gridfinder
 pip install -r requirements.txt
 ```
-
-Then run ``jupyter notebook`` and open ``gridfinder.ipynb``  or `quickrun.ipynb` to go over the main model usage and API.
