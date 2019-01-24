@@ -12,7 +12,7 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import clip_line_poly, save_raster
+from gridfinder._util import clip_line_poly, save_raster, clip_raster
 
 
 def clip_rasters(folder_in, folder_out, aoi_in):
@@ -91,7 +91,7 @@ def create_filter():
     return ntl_filter
 
 
-def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
+def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=3):
     """
 
     """
@@ -113,7 +113,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
         ntl = ntl[0]
 
     ntl_convolved = signal.convolve2d(ntl, ntl_filter, mode='same')
-    ntl_filtered = ntl - ntl_convolved + 2
+    ntl_filtered = ntl - ntl_convolved
 
     ntl_interp = np.empty(shape=(1,  # same number of bands
                                 round(ntl.shape[0] * upsample_by),
@@ -140,6 +140,85 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=2.1, upsample_by=3):
     ntl_thresh[ntl_thresh >= threshold] = 1
 
     return ntl, ntl_filtered, ntl_interp, ntl_thresh, newaff
+
+
+def drop_zero_pop(targets_in, pop_in, aoi_in):
+    """
+
+    """
+
+    # Clip population layer to AOI
+    aoi = gpd.read_file(aoi_in)
+    clipped, affine, crs = clip_raster(pop_in, aoi)
+    clipped = clipped[0]
+
+    # We need to warp the population layer to exactly overlap cell for cell with targets
+    # First get array, affine and crs from targets (which is what we)
+    targets_rd = rasterio.open(targets_in)
+    targets = targets_rd.read(1)
+    ghs_proj = np.empty_like(targets)
+    dest_affine = targets_rd.transform
+    dest_crs = targets_rd.crs
+
+    # Then use reproject 
+    with rasterio.Env():
+        reproject(
+            source = clipped, 
+            destination = ghs_proj,
+            src_transform = affine,
+            dst_transform = dest_affine,
+            src_crs = crs,
+            dst_crs = dest_crs,
+            resampling = Resampling.bilinear)
+
+    # Finally read to run algorithm to drop target blobs (continuous areas of target==1)
+    # where there is no underlying population
+
+    blobs = []
+    skip = []
+    max_i = targets.shape[0]
+    max_j = targets.shape[1]
+
+    def add_around(blob, cell):
+        blob.append(cell)
+        skip.append(cell)
+        
+        for x in range(-1,2):
+            for y in range(-1,2):
+                next_i = i + x
+                next_j = j + y
+                next_cell = (next_i, next_j)
+                
+                if targets[next_i][next_j] == 1 and next_cell not in skip:
+                    # ensure we're within bounds
+                    if next_i >= 0 and next_j >= 0 and next_i < max_i and next_j < max_j:
+                        # ensure we're not looking at the same spot
+                        if not next_cell == cell:
+                            blob = add_around(blob, next_cell)
+
+        return blob
+
+    for i in range(max_i):
+        for j in range(max_j):
+            if targets[i][j] == 1 and (i, j) not in skip:          
+                blob = add_around(blob=[], cell=(i, j))
+                blobs.append(blob)
+                
+    for blob in blobs:
+        found = False
+        for cell in blob:
+            if ghs_proj[cell] > 1:
+                found = True
+                break
+        if not found:
+            # set all values in blob to 0
+            for cell in blob:
+                targets[cell] = 0
+
+    return targets
+
+
+
 
 def prepare_roads(roads_in, aoi_in, ntl_in):
     """

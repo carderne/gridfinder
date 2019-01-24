@@ -16,7 +16,7 @@ from gridfinder.post import threshold, accuracy, guess2geom
 
 DEFAULT_PERCENTILE=70
 DEFAULT_UPSAMPLE=2
-DEAFULT_THRESHOLD=2.1
+DEAFULT_THRESHOLD=0.1
 DEFAULT_CUTOFF=0.5
 
 def main(country,
