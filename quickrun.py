@@ -87,7 +87,7 @@ def main(country,
 
         if drop_sites:
             print(' - Droping zero population sites')
-            targets_clean = drop_zero_pop(ntl_thresh_out, pop_in, aoi_in)
+            targets_clean = drop_zero_pop(ntl_thresh_out, pop_in, aoi)
             save_raster(targets_out, targets_clean, affine)
             save_raster(targets_out_clean, targets_clean, affine)
         else:
