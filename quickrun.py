@@ -56,6 +56,7 @@ def main(country,
     ntl_folder_out = folder_out / 'ntl_clipped'
     ntl_merged_out = folder_out / 'ntl_merged.tif'
     targets_out = folder_out / 'targets.tif'
+    targets_out_clean = folder_out / 'targets_clean.tif'
     roads_out = folder_out / 'roads.tif'
     dist_out = folder_out / 'dist.tif'
     guess_out = folder_out / 'guess.tif'
@@ -79,19 +80,21 @@ def main(country,
         save_raster(targets_out, ntl_thresh, affine)
         print(' - Done filter')
 
-        if drop_sites:
-            targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
-            save_raster(targets_out, targets_clean, affine)
-
     if skip_ntl:
         print(' - Skipping NTL steps')
     else:
         prep_ntl()
 
+    if drop_sites:
+        targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
+        save_raster(targets_out_clean, targets_clean, affine)
+        targets_out = targets_out_clean
+
+
     def prep_roads():
         # Create roads raster
         _, _, _, roads_raster, affine = prepare_roads(
-            roads_in, aoi, ntl_thresh_out)
+            roads_in, aoi, targets_out)
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
 
