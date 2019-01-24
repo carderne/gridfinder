@@ -5,6 +5,7 @@
 import os
 from math import sqrt
 import json
+from pathlib import Path
 
 import numpy as np
 from scipy import signal
@@ -146,13 +147,15 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=3):
     return ntl, ntl_filtered, ntl_interp, ntl_thresh, newaff
 
 
-def drop_zero_pop(targets_in, pop_in, aoi_in):
+def drop_zero_pop(targets_in, pop_in, aoi):
     """
 
     """
+
+    if isinstance(aoi, (str, Path)):
+        aoi = gpd.read_file(aoi)
 
     # Clip population layer to AOI
-    aoi = gpd.read_file(aoi_in)
     clipped, affine, crs = clip_raster(pop_in, aoi)
     clipped = clipped[0]
 

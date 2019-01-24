@@ -59,6 +59,7 @@ def main(country,
 
     ntl_folder_out = folder_out / 'ntl_clipped'
     ntl_merged_out = folder_out / 'ntl_merged.tif'
+    ntl_thresh_out = folder_out / 'ntl_thresh.tif'
     targets_out = folder_out / 'targets.tif'
     targets_out_clean = folder_out / 'targets_clean.tif'
     roads_out = folder_out / 'roads.tif'
@@ -81,13 +82,16 @@ def main(country,
         _, _, _, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
                                                                         threshold=ntl_threshold,
                                                                         upsample_by=upsample)
-        save_raster(targets_out, ntl_thresh, affine)
+        save_raster(ntl_thresh_out, ntl_thresh, affine)
         print(' - Done filter')
 
         if drop_sites:
             print(' - Droping zero population sites')
-            targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
+            targets_clean = drop_zero_pop(ntl_thresh_out, pop_in, aoi_in)
             save_raster(targets_out, targets_clean, affine)
+            save_raster(targets_out_clean, targets_clean, affine)
+        else:
+            save_raster(targets_out, ntl_thresh, affine)
 
     if skip_ntl:
         print(' - Skipping NTL steps')
