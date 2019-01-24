@@ -1,3 +1,7 @@
+# gridfinder
+# Licensed under GPL-3.0
+# (C) Christopher Arderne
+
 import os
 from pathlib import Path
 import json

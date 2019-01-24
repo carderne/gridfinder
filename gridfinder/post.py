@@ -1,3 +1,7 @@
+# gridfinder
+# Licensed under GPL-3.0
+# (C) Christopher Arderne
+
 import numpy as np
 import rasterio
 from rasterio.features import shapes, rasterize

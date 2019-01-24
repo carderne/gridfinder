@@ -1,3 +1,7 @@
+# gridfinder
+# Licensed under GPL-3.0
+# (C) Christopher Arderne
+
 from math import sqrt
 from heapq import heapify, heappush, heappop
 import pickle
