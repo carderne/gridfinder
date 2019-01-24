@@ -26,7 +26,7 @@ def main(country,
          cutoff=DEFAULT_CUTOFF,
          skip_ntl=False,
          skip_roads=False,
-         drop_sites=True):
+         drop_sites=False):
 
     print(' - Running with:')
     print('Country:', country)
@@ -34,6 +34,10 @@ def main(country,
     print('Upsample:', upsample)
     print('Threshold:', ntl_threshold)
     print('Cutoff:', cutoff)
+    print()
+    print('Skip NTL:', skip_ntl)
+    print('Skip roads:', skip_roads)
+    print('Drop zero pop:', drop_sites)
     print()
 
     # Set file paths and clip AOI
@@ -86,6 +90,7 @@ def main(country,
         prep_ntl()
 
     if drop_sites:
+        print(' - Droping zero population sites')
         targets_clean = drop_zero_pop(targets_out, pop_in, aoi_in)
         save_raster(targets_out_clean, targets_clean, affine)
         targets_out = targets_out_clean
