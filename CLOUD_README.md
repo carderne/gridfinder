@@ -33,7 +33,7 @@ $ python gridfinder/quickrun.py --country=Rwanda --percentile=60 --upsample=2
 
 9. To download results, type the following to see what zip files are available.
 ```
-$ l download
+$ l download/
 ```
 
 10. Then open another terminal on your laptop and type the following to copy it to your laptop:

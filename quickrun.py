@@ -67,7 +67,7 @@ def main(country,
     guess_out = folder_out / 'guess.tif'
     final_out = folder_out / 'guess.gpkg'
 
-    zip_file = download_path / f'{country}_{percentile}_{upsample}_{ntl_threshold}_{cutoff}'
+    zip_file = download_path / f'{country}_p{percentile}_u{upsample}_t{ntl_threshold}_c{cutoff}_d{drop_sites}'
     print(' - Done setup')
 
     def prep_ntl():
