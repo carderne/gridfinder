@@ -196,11 +196,12 @@ def drop_zero_pop(targets_in, pop_in, aoi):
                 next_j = j + y
                 next_cell = (next_i, next_j)
                 
-                if targets[next_i][next_j] == 1 and next_cell not in skip:
-                    # ensure we're within bounds
-                    if next_i >= 0 and next_j >= 0 and next_i < max_i and next_j < max_j:
-                        # ensure we're not looking at the same spot
-                        if not next_cell == cell:
+                # ensure we're within bounds
+                if next_i >= 0 and next_j >= 0 and next_i < max_i and next_j < max_j:
+                    # ensure we're not looking at the same spot or one that's been done
+                    if not next_cell == cell and next_cell not in skip:
+                        # if it's an electrified cell
+                        if targets[next_i][next_j] == 1:
                             blob = add_around(blob, next_cell)
 
         return blob
