@@ -38,7 +38,7 @@ $ l download/
 
 10. Then open another terminal on your laptop and type the following to copy it to your laptop:
 ```
-$ scp <user>@<IP>$:~/download/<filename.zip> /somewhere/on/your/laptop
+$ scp <user>@<IP>:~/download/<filename> /somewhere/on/local/machine
 ```
 
 11. Pay attention the next time you SSH in, as it displays the current hard drive space available: `Usage of /: 83.2%...`. We might need to delete some stuff in `output/` if this gets above 95% or something.
