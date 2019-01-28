@@ -1,3 +1,19 @@
+# gridfinder
+# Licensed under GPL-3.0
+# (c) Christopher Arderne
+
+"""A simple command line script to run the full gridfinder package.
+It uses quite a specific folder structure and might break with different files.
+
+Input GADM: ~/data/gadm.gpkg
+Input GHS: ~/data/ghs.tif
+Input NTL fodler: ~/data/ntl/
+Input roads: ~/data/roads/<country>.gpkg
+
+Output data: ~/output/<country>/
+Zipped output: ~/download/<country>_<parameters>.zip
+"""
+
 import argparse
 import sys
 import os
@@ -27,6 +43,10 @@ def main(country,
          skip_ntl=False,
          skip_roads=False,
          drop_sites=False):
+    """
+    Run through the entire gridfinder process, skipping some steps depending on
+    input parameters.
+    """
 
     print(' - Running with:')
     print('Country:', country)
@@ -79,7 +99,7 @@ def main(country,
 
         # Apply filter to NTL
         ntl_filter = create_filter()
-        _, _, _, ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
+        ntl_thresh, affine = prepare_ntl(ntl_merged_out, aoi, ntl_filter=ntl_filter,
                                                                         threshold=ntl_threshold,
                                                                         upsample_by=upsample)
         save_raster(ntl_thresh_out, ntl_thresh, affine)
@@ -100,7 +120,7 @@ def main(country,
 
     def prep_roads():
         # Create roads raster
-        _, _, _, roads_raster, affine = prepare_roads(
+        roads_raster, affine = prepare_roads(
             roads_in, aoi, targets_out)
         save_raster(roads_out, roads_raster, affine)
         print(' - Done roads')
@@ -122,12 +142,12 @@ def main(country,
     print(' - Done optimisation')
 
     # Threshold optimisation output
-    dists_r, guess, affine = threshold(dist_out, cutoff=cutoff)
+    guess, affine = threshold(dist_out, cutoff=cutoff)
     save_raster(guess_out, guess, affine)
     print(' - Done threshold')
 
     # Polygonize
-    guess_r, guess_geojson, guess_gdf = guess2geom(guess_out)
+    guess_gdf = guess2geom(guess_out)
     guess_gdf.to_file(final_out, driver='GPKG')
     print(' - Done polygonize')
 

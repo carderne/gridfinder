@@ -1,6 +1,14 @@
 # gridfinder
 # Licensed under GPL-3.0
-# (C) Christopher Arderne
+# (c) Christopher Arderne
+
+"""Implements Djikstra's algorithm on a cost-array to create an MST.
+
+Functions:
+ - get_targets_costs
+ - estimate_mem_use
+ - optimise
+"""
 
 from math import sqrt
 from heapq import heapify, heappush, heappop
@@ -11,10 +19,29 @@ import rasterio
 
 from IPython.display import display, Markdown
 
+
 def get_targets_costs(targets_in, costs_in):
+    """Load the targets and costs arrays from the given file paths.
+
+    Parameters
+    ----------
+    targets_in : str
+        Path for targets raster.
+    costs_in : str
+        Path for costs raster.
+
+    Returns
+    -------
+    targets : numpy array
+        2D array of targets
+    costs: numpy array
+        2D array of costs
+    start: tuple
+        Two-element tuple with row, col of starting point.
+    affine : affine.Affine
+        Affine transformation for the rasters.
     """
 
-    """
     targets_ra = rasterio.open(targets_in)
     affine = targets_ra.transform
     targets = targets_ra.read(1)
@@ -32,12 +59,22 @@ def get_targets_costs(targets_in, costs_in):
 
 
 def estimate_mem_use(targets, costs):
-    """
-    Estimate memory usage in GB
+    """Estimate memory usage in GB, probably not very accurate.
+
+    Parameters
+    ----------
+    targets : numpy array
+        2D array of targets.
+    costs : numpy array
+        2D array of costs.
+    
+    Returns
+    -------
+    est_mem : float
+        Estimated memory requirement in GB.
     """
 
     # make sure these match the ones used in optimise below
-
     visited = np.zeros_like(targets, dtype=np.int8)
     dist = np.full_like(costs, np.nan, dtype=np.float32)
     prev = np.full_like(costs, np.nan, dtype=object)
@@ -49,8 +86,24 @@ def estimate_mem_use(targets, costs):
 
 
 def optimise(targets, costs, start, jupyter=False):
-    """
+    """Run the Djikstra algorithm for the supplied arrays.
 
+    Parameters
+    ----------
+    targets : numpy array
+        2D array of targets.
+    costs : numpy array
+        2D array of costs.
+    start : tuple
+        Two-element tuple with row, col of starting point.
+    jupyter : boolean, optional (default False)
+        Whether the code is being run from a Jupyter Notebook.
+
+    Returns
+    -------
+    dist : numpy array
+        2D array with the distance (in cells) of each point from a 'found'
+        on-grid point. Values of 0 imply that cell is part of an MV grid line.
     """
         
     max_i = costs.shape[0]
@@ -71,6 +124,14 @@ def optimise(targets, costs, start, jupyter=False):
     heapify(queue)
     
     def zero_and_heap_path(loc):
+        """Zero the location's distance value and follow upstream doing same.
+
+        Parameters
+        ----------
+        loc : tuple
+            row, col of current point.
+        """
+
         if not dist[loc] == 0:
             dist[loc] = 0
             visited[loc] = 1
@@ -94,7 +155,6 @@ def optimise(targets, costs, start, jupyter=False):
         current_j = current_loc[1]
         current_dist = dist[current_loc]
         
-        #print('\nCURRENT', current, 'DIST', current_dist, 'LEN', len(queue))
         for x in range(-1,2):
             for y in range(-1,2):
                 next_i = current_i + x
@@ -117,7 +177,6 @@ def optimise(targets, costs, start, jupyter=False):
                 if targets[next_loc]:
                     prev[next_loc] = current_loc
                     zero_and_heap_path(next_loc)
-                    #print('FOUND CONNECTED at', next_loc)
                 
                 # otherwise it's a normal queue cell
                 else:
@@ -131,13 +190,11 @@ def optimise(targets, costs, start, jupyter=False):
 
                     if visited[next_loc]:
                         if next_dist + 0.4 < dist[next_loc]:
-                            #print('REVISITING at', next_loc, '  NEW DIST', next_dist)
                             dist[next_loc] = next_dist
                             prev[next_loc] = current_loc
                             heappush(queue, [next_dist, next_loc])
 
                     else:
-                        #print('NEW CELL at', next_loc, '  DIST', next_dist)
                         heappush(queue, [next_dist, next_loc])
                         visited[next_loc] = 1
                         dist[next_loc] = next_dist

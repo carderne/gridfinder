@@ -1,6 +1,17 @@
 # gridfinder
 # Licensed under GPL-3.0
-# (C) Christopher Arderne
+# (c) Christopher Arderne
+
+"""Post-processing for gridfinder package.
+
+Functions
+ - threshold
+ - guess2geom
+ - accuracy
+ - true_positives
+ - false_negatives
+ - flip_arr_values
+"""
 
 import numpy as np
 import rasterio
@@ -11,9 +22,23 @@ from gridfinder._util import save_raster, clip_line_poly
 
 
 def threshold(dists_in, cutoff=0.5):
+    """Convert distance array into binary array of connected locations.
+
+    Parameters
+    ----------
+    dists_in : numpy array
+        2D array output from gridfinder algorithm.
+    cutoff : float, optional (default 0.5.)
+        Cutoff value below which consider the cells to be grid.
+
+    Returns
+    -------
+    guess : numpy array
+        Binary representation of input array.
+    affine: affine.Affine
+        Affine transformation for raster.
     """
 
-    """
     dists_rd = rasterio.open(dists_in)
     dists_r = dists_rd.read(1)
 
@@ -22,13 +47,24 @@ def threshold(dists_in, cutoff=0.5):
 
     guess[dists_r >= cutoff] = 0
     guess[dists_r < cutoff] = 1
+
+    affine = dists_rd.transform
     
-    return dists_r, guess, dists_rd.transform
+    return guess, affine
 
 
 def guess2geom(guess_in):
-    """
+    """Convert a raster guess into polygon features.
 
+    Parameters
+    ----------
+    guess_in : str, Path
+        Path to guess raster.
+    
+    Returns
+    -------
+    guess_gdf : GeoDataFrame
+        GeoDataFrame polygon of guess features.
     """
 
     guess_rd = rasterio.open(guess_in)
@@ -51,14 +87,24 @@ def guess2geom(guess_in):
         })
 
     guess_gdf = gpd.GeoDataFrame.from_features(guess_geojson, crs={'init': 'epsg:4326'})
-
     guess_gdf = guess_gdf.loc[guess_gdf['val'] == 1]
 
-    return guess_r, guess_geojson, guess_gdf
+    return guess_gdf
 
-def accuracy(grid_in, guesses_in, aoi_in, buffer_amount=0.01):
-    """
+def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
+    """Measure accuracy against a specified grid 'truth' file.
 
+    Parameters
+    ----------
+    grid_in : str, Path
+        Path to vector truth file.
+    guess_in : str, Path
+        Path to guess output from guess2geom.
+    aoi_in : str, Path
+        Path to AOI feature.
+    buffer_amount : float, optional (default 0.01.)
+        Leeway in decimal degrees in calculating equivalence.
+        0.01 DD equals approximately 1 mile at the equator.
     """
 
     if isinstance(aoi_in, gpd.GeoDataFrame):
@@ -70,7 +116,7 @@ def accuracy(grid_in, guesses_in, aoi_in, buffer_amount=0.01):
     grid_clipped = clip_line_poly(grid, aoi)
     grid_buff = grid_clipped.buffer(buffer_amount)
 
-    guesses_reader = rasterio.open(guesses_in)
+    guesses_reader = rasterio.open(guess_in)
     guesses = guesses_reader.read(1)
 
     grid_for_raster = [(row.geometry) for _, row in grid_clipped.iterrows()]
@@ -89,9 +135,21 @@ def accuracy(grid_in, guesses_in, aoi_in, buffer_amount=0.01):
 
 
 def true_positives(guesses, truths):
+    """Calculate true positives, used by accuracy().
+
+    Parameters
+    ----------
+    guesses : numpy array
+        Output from model.
+    truths : numpy array
+        Truth feature converted to array.
+
+    Returns
+    -------
+    tp : float
+        Ratio of true positives.
     """
 
-    """
     yes_guesses = 0
     yes_guesses_correct = 0
     rows = guesses.shape[0]
@@ -106,13 +164,27 @@ def true_positives(guesses, truths):
                 if guess == truth:
                     yes_guesses_correct += 1
 
-    return yes_guesses_correct / yes_guesses
+    tp = yes_guesses_correct / yes_guesses
+
+    return tp
 
 
 def false_negatives(guesses, truths):
+    """Calculate false negatives, used by accuracy().
+
+    Parameters
+    ----------
+    guesses : numpy array
+        Output from model.
+    truths : numpy array
+        Truth feature converted to array.
+
+    Returns
+    -------
+    fn : float
+        Ratio of false negatives.
     """
 
-    """
     actual_grid = 0
     actual_grid_missed = 0
 
@@ -144,13 +216,14 @@ def false_negatives(guesses, truths):
                     if not found:
                         actual_grid_missed += 1
 
-    return actual_grid_missed / actual_grid
+    fn = actual_grid_missed / actual_grid
+
+    return fn
 
 
 def flip_arr_values(arr):
-    """
-
-    """
+    """Simple helper function used by accuracy()"""
+    
     arr[arr == 1] = 2
     arr[arr == 0] = 1
     arr[arr == 2] = 0

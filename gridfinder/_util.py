@@ -1,6 +1,14 @@
 # gridfinder
 # Licensed under GPL-3.0
-# (C) Christopher Arderne
+# (c) Christopher Arderne
+
+"""Utility module used internally.
+
+Functions:
+ - save_raster
+ - clip_line_poly
+ - clip_raster
+"""
 
 import os
 from pathlib import Path
@@ -12,9 +20,20 @@ from rasterio.mask import mask
 
 
 def save_raster(file, raster, affine, crs=None):
+    """Save a raster to the specified file.
+
+    Parameters
+    ----------
+    file : str
+        Output file path
+    raster : numpy.array
+        2D numpy array containing raster values
+    affine: affine.Affine
+        Affine transformation for the raster
+    crs: str, proj.Proj, optional (default EPSG4326)
+        CRS for the raster
     """
 
-    """
     if not os.path.exists(os.path.dirname(file)):
         try:
             os.makedirs(os.path.dirname(file))
@@ -32,41 +51,53 @@ def save_raster(file, raster, affine, crs=None):
     filtered_out.write(raster, 1)
     filtered_out.close()
 
-def clip_line_poly(shp, clip_obj):
-    '''
-    docs
-    '''
+
+def clip_line_poly(line, clip_poly):
+    """Clip a line features by the provided polygon feature.
+
+    Parameters
+    ----------
+    line : GeoDataFrame
+        The line features to be clipped.
+    clip_poly : GeoDataFrame
+        The polygon used to clip the line.
+
+    Returns
+    -------
+    clipped : GeoDataFrame
+        The clipped line feature.
+    """
 
     # Create a single polygon object for clipping
-    poly = clip_obj.geometry.unary_union
-    spatial_index = shp.sindex
+    poly = clip_poly.geometry.unary_union
+    spatial_index = line.sindex
 
     # Create a box for the initial intersection
     bbox = poly.bounds
     # Get a list of id's for each road line that overlaps the bounding box and subset the data to just those lines
     sidx = list(spatial_index.intersection(bbox))
-    shp_sub = shp.iloc[sidx]
+    shp_sub = line.iloc[sidx]
 
     # Clip the data - with these data
     clipped = shp_sub.copy()
     clipped['geometry'] = shp_sub.intersection(poly)
+    # remove null geometry values
+    clipped = clipped[clipped.geometry.notnull()]
 
-    # Return the clipped layer with no null geometry values
-    return(clipped[clipped.geometry.notnull()])
+    return clipped
 
 
 # clip_raster is copied from openelec.clustering
 def clip_raster(raster, boundary, boundary_layer=None):
-    """
-    Clip the raster to the given administrative boundary.
+    """Clip the raster to the given administrative boundary.
 
     Parameters
     ----------
-    raster: string, pathlib.Path or rasterio.io.DataSetReader
+    raster : string, pathlib.Path or rasterio.io.DataSetReader
         Location of or already opened raster.
-    boundary: string, pathlib.Path or geopandas.GeoDataFrame
+    boundary : string, pathlib.Path or geopandas.GeoDataFrame
         The poylgon by which to clip the raster.
-    boundary_layer: string, optional
+    boundary_layer : string, optional
         For multi-layer files (like GeoPackage), specify the layer to be used.
 
 
@@ -74,12 +105,12 @@ def clip_raster(raster, boundary, boundary_layer=None):
     -------
     tuple
         Three elements:
-            clipped: numpy.ndarray
+            clipped : numpy.ndarray
                 Contents of clipped raster.
-            affine: affine.Affine()
+            affine : affine.Affine()
                 Information for mapping pixel coordinates
                 to a coordinate system.
-            crs: dict
+            crs : dict
                 Dict of the form {'init': 'epsg:4326'} defining the coordinate
                 reference system of the raster.
 
