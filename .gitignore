@@ -3,6 +3,7 @@
 *.mp4
 server/
 gridfinder_animated.ipynb
+quickrun.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
