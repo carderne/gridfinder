@@ -12,8 +12,7 @@ test:
 	source /home/chris/.envs/gridfinder/bin/activate || true
 
 	# for rasterio/Fiona CRS issues
-	# export GDAL_DATA=$()
-	fio env --gdal-data
+	export GDAL_DATA="/home/travis/virtualenv/python3.6.3/lib/python3.6/site-packages/fiona/gdal_data"
 
 	# run script
 	python3 example.py
