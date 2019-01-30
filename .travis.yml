@@ -2,9 +2,13 @@ language: python
 python:
   - "3.6"
 
+# easiest way of getting rtree
+before_install:
+  - sudo apt update
+  - sudo apt install python3-rtree
+
 # command to install dependencies
 install:
-  - sudo apt install python3-rtree
   - pip install wheel
   - pip install -r requirements.txt
 
