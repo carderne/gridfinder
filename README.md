@@ -1,4 +1,6 @@
 # gridfinder
+[![Build Status](https://travis-ci.org/carderne/gridfinder.svg?branch=master)](https://travis-ci.org/carderne/gridfinder)
+
 Algorithm for guessing MV grid network based on NTL. An adaptation of [this work from Facebook](https://github.com/facebookresearch/many-to-many-dijkstra).
 
 gridfinder uses NASA night time lights imagery to as an indicator of settlements/towns with grid electricity access. Then a minimum spanning tree is calculated for these connect points, using the Djikstra algorithm and using existing road networks as a cost function.
