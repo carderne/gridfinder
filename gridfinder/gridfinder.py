@@ -1,13 +1,5 @@
-# gridfinder
-# Licensed under GPL-3.0
-# (c) Christopher Arderne
-
-"""Implements Djikstra's algorithm on a cost-array to create an MST.
-
-Functions:
- - get_targets_costs
- - estimate_mem_use
- - optimise
+"""
+Implements Djikstra's algorithm on a cost-array to create an MST.
 """
 
 from math import sqrt

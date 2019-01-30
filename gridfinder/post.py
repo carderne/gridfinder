@@ -1,16 +1,5 @@
-# gridfinder
-# Licensed under GPL-3.0
-# (c) Christopher Arderne
-
-"""Post-processing for gridfinder package.
-
-Functions
- - threshold
- - guess2geom
- - accuracy
- - true_positives
- - false_negatives
- - flip_arr_values
+"""
+Post-processing for gridfinder package.
 """
 
 import numpy as np

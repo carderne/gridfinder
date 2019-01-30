@@ -1,8 +1,5 @@
-# gridfinder
-# Licensed under GPL-3.0
-# (c) Christopher Arderne
-
-"""A simple command line script to run the full gridfinder package.
+"""
+A simple command line script to run the full gridfinder package.
 It uses quite a specific folder structure and might break with different files.
 
 Input GADM: ~/data/gadm.gpkg

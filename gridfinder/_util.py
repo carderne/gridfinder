@@ -1,13 +1,5 @@
-# gridfinder
-# Licensed under GPL-3.0
-# (c) Christopher Arderne
-
-"""Utility module used internally.
-
-Functions:
- - save_raster
- - clip_line_poly
- - clip_raster
+"""
+Utility module used internally.
 """
 
 import os
