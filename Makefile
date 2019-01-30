@@ -11,4 +11,8 @@ test:
 	# activate virtualenv if present but continue anyway
 	source /home/chris/.envs/gridfinder/bin/activate || true
 
+	# for rasterio/Fiona CRS issues
+	export GDAL_DATA=$(fio env --gdal-data)
+
+	# run script
 	python3 example.py
