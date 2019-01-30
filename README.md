@@ -1,5 +1,4 @@
 # gridfinder
-[![Build Status](https://travis-ci.org/carderne/gridfinder.svg?branch=master)](https://travis-ci.org/carderne/gridfinder)
 
 Algorithm for guessing MV grid network based on NTL. An adaptation of [this work from Facebook](https://github.com/facebookresearch/many-to-many-dijkstra).
 
