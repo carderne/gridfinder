@@ -1,5 +1,13 @@
+# _util.py
+#! python3
+
 """
 Utility module used internally.
+
+Functions:
+- save_raster
+- clip_line_poly
+- clip_raster
 """
 
 import os

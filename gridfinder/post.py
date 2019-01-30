@@ -1,5 +1,16 @@
+# post.py
+#! python3
+
 """
 Post-processing for gridfinder package.
+
+Functions
+- threshold
+- guess2geom
+- accuracy
+- true_positives
+- false_negatives
+- flip_arr_values
 """
 
 import numpy as np

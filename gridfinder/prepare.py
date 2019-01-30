@@ -1,5 +1,17 @@
+# prepare.py
+#! python3
+
 """
 Prepare input layers for gridfinder.
+
+Functions
+- clip_rasters
+- merge_rasters
+- filter_func
+- create_filter
+- prepare_ntl
+- drop_zero_pop
+- prepare_roads
 """
 
 import os

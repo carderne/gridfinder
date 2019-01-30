@@ -1,3 +1,6 @@
+# __init__.py
+#! python3
+
 """
 gridfinder package contains the following modules:
  - gridfinder.py : main implementation of Djikstra's algorithm
