@@ -16,7 +16,7 @@ gridfinder requires the following data sources:
 
 ## Model usage
 
-To get to grips with the API and steps in the model, open the Jupyter notebook `gridfinder.ipynb`. This repository  includes the input data needed to do a test run for Burundi, so it should be a matter of openening the notebook and running all cells.
+To get to grips with the API and steps in the model, open the Jupyter notebook `example.ipynb`. This repository  includes the input data needed to do a test run for Burundi, so it should be a matter of openening the notebook and running all cells.
 
 ## Installation
 
