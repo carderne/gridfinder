@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 from scipy import signal
 
+import fiona
 import rasterio
 from rasterio.mask import mask
 from rasterio.features import shapes, rasterize
@@ -180,15 +181,15 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
     # adjust the new affine transform to the 150% smaller cell size
     newaff = Affine(affine.a / upsample_by, affine.b, affine.c,
                         affine.d, affine.e / upsample_by, affine.f)
-
-    with rasterio.Env():
-        reproject(
-            ntl_filtered, ntl_interp,
-            src_transform = affine,
-            dst_transform = newaff,
-            src_crs = {'init': 'epsg:4326'},
-            dst_crs = {'init': 'epsg:4326'},
-            resampling = Resampling.bilinear)
+    with fiona.Env():
+        with rasterio.Env():
+            reproject(
+                ntl_filtered, ntl_interp,
+                src_transform = affine,
+                dst_transform = newaff,
+                src_crs = {'init': 'epsg:4326'},
+                dst_crs = {'init': 'epsg:4326'},
+                resampling = Resampling.bilinear)
         
     ntl_interp = ntl_interp[0]
 
