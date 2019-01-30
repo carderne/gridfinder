@@ -5,11 +5,12 @@ python:
 # easiest way of getting rtree
 before_install:
   - sudo apt update
-  - sudo apt install python3-rtree
+  - sudo apt install libspatialindex-dev
 
 # command to install dependencies
 install:
   - pip install wheel
+  - pip install Rtree
   - pip install -r requirements.txt
 
 # command to run tests
