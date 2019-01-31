@@ -1,11 +1,7 @@
 # Custom
-*.png
-*.mp4
 server/
 test_output/
-gridfinder_animated.ipynb
 quickrun.py
-example.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -16,3 +16,7 @@ test:
 
 	# run script
 	python3 example.py
+
+	# clean up
+	rm example.py
+	rm -r test_output

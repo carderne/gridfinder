@@ -11,14 +11,16 @@ Functions:
 
 """
 
+import os
 from math import sqrt
 from heapq import heapify, heappush, heappop
 import pickle
 
 import numpy as np
 import rasterio
-
 from IPython.display import display, Markdown
+
+from gridfinder._util import save_raster
 
 
 def get_targets_costs(targets_in, costs_in):
@@ -86,7 +88,7 @@ def estimate_mem_use(targets, costs):
     return est_mem / 1e9
 
 
-def optimise(targets, costs, start, jupyter=False):
+def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, animate_path=None):
     """Run the Djikstra algorithm for the supplied arrays.
 
     Parameters
@@ -210,5 +212,9 @@ def optimise(targets, costs, start, jupyter=False):
                                 handle.update(message)
                             else:
                                 print(message)
+                            if animate:
+                                i = int(progress)
+                                path = os.path.join(animate_path, f'arr{i:03d}.tif')
+                                save_raster(path, dist, affine)
                     
     return dist

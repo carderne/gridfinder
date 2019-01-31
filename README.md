@@ -50,3 +50,4 @@ git clone https://github.com/carderne/gridfinder.git
 cd gridfinder
 pip install -r requirements.txt
 ```
+You can run ```make test``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly.
