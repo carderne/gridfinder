@@ -21,7 +21,7 @@ import geopandas as gpd
 from gridfinder._util import save_raster, clip_line_poly
 
 
-def threshold(dists_in, cutoff=0.5):
+def threshold(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -45,8 +45,8 @@ def threshold(dists_in, cutoff=0.5):
     guess = np.empty_like(dists_r)
     guess[:] = dists_r[:]
 
-    guess[dists_r >= cutoff] = 0
-    guess[dists_r < cutoff] = 1
+    guess[dists_r > cutoff] = 0
+    guess[dists_r <= cutoff] = 1
 
     affine = dists_rd.transform
     
