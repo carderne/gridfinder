@@ -14,9 +14,14 @@ Functions
 """
 
 import numpy as np
+import pandas as pd
+import geopandas as gpd
+from skimage.morphology import skeletonize
+import shapely.wkt
+from shapely.geometry import Point, LineString
 import rasterio
 from rasterio.features import shapes, rasterize
-import geopandas as gpd
+from rasterio.transform import xy
 
 from gridfinder._util import save_raster, clip_line_poly
 
@@ -53,43 +58,94 @@ def threshold(dists_in, cutoff=0.0):
     return guess, affine
 
 
-def guess2geom(guess_in):
-    """Convert a raster guess into polygon features.
+def thin(guess_in):
+    """
+    Use scikit-image skeletonize to 'thin' the guess raster.
 
     Parameters
     ----------
-    guess_in : str, Path
-        Path to guess raster.
+    guess_in : str or Path
+        Output from threshold().
+
+    Returns
+    -------
+    guess_skel : numpu array
+        Thinned version.
+    """
+
+    guess_rd = rasterio.open(guess_in)
+    guess_arr = guess_rd.read(1)
+    guess_skel = skeletonize(guess_arr)
+    guess_skel = guess_skel.astype('int32')
+    
+    return guess_skel
+
+
+def raster_to_lines(guess_skel_in):
+    """
+    Convert thinned raster to linestring geometry.
+
+    Parameters
+    ----------
+    guess_skel_in : str or Path
+        Output from thin().
     
     Returns
     -------
     guess_gdf : GeoDataFrame
-        GeoDataFrame polygon of guess features.
+        Converted to geometry.
     """
 
-    guess_rd = rasterio.open(guess_in)
-    guess_r = guess_rd.read(1)
-    transform = guess_rd.transform
+    rast = rasterio.open(guess_skel_in)
+    arr = rast.read(1)
+    affine = rast.transform
 
-    guess_geojson = {
-        'type': 'FeatureCollection',
-        'features': []
-    }
+    max_row = arr.shape[0]
+    max_col = arr.shape[1]
+    lines = []
 
-    guess_features = shapes(guess_r, transform=transform)
-    for f, v in guess_features:    
-        guess_geojson['features'].append({
-            'type': 'Feature',
-            'properties': {
-                'val': v
-            },
-            'geometry': f
-        })
+    for row in range(0, max_row):
+        for col in range(0, max_col):
+            loc = (row, col)
+            if arr[loc] == 1:
+                for i in range(-1,2):
+                    for j in range(-1,2):
+                        next_row = row + i
+                        next_col = col + j
+                        next_loc = (next_row, next_col)
+                        
+                        # ensure we're within bounds
+                        if next_row < 0 or next_col < 0 or next_row >= max_row or next_col >= max_col:
+                            continue
+                        # ensure we're not looking at the same spot
+                        if next_loc == loc:
+                            continue
+                            
+                        if arr[next_loc] == 1:
+                            line = (loc, next_loc)
+                            rev = (line[1], line[0])
+                            if line not in lines and rev not in lines:
+                                lines.append(line)
 
-    guess_gdf = gpd.GeoDataFrame.from_features(guess_geojson, crs={'init': 'epsg:4326'})
-    guess_gdf = guess_gdf.loc[guess_gdf['val'] == 1]
+    real_lines = []
+    for line in lines:
+        real = (xy(affine, line[0][0], line[0][1]), xy(affine, line[1][0], line[1][1]))
+        real_lines.append(real)
+
+    shapes = []
+    for line in real_lines:
+        shapes.append(LineString([Point(line[0]), Point(line[1])]).wkt)
+
+    guess_gdf = pd.DataFrame(shapes)
+    geometry = guess_gdf[0].map(shapely.wkt.loads)
+    guess_gdf = guess_gdf.drop(0, axis=1)
+    guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=rast.crs, geometry=geometry)
+
+    guess_gdf['same'] = 0
+    guess_gdf = guess_gdf.dissolve(by='same')
 
     return guess_gdf
+
 
 def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     """Measure accuracy against a specified grid 'truth' file.
