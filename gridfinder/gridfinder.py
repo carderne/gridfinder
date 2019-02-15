@@ -88,7 +88,7 @@ def estimate_mem_use(targets, costs):
     return est_mem / 1e9
 
 
-def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, animate_path=None):
+def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, animate_path=None, silent=False):
     """Run the Djikstra algorithm for the supplied arrays.
 
     Parameters
@@ -210,7 +210,7 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
                             message = f'{progress:.2f} %'
                             if jupyter:
                                 handle.update(message)
-                            else:
+                            elif not silent:
                                 print(message)
                             if animate:
                                 i = int(progress)
