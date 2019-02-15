@@ -75,10 +75,12 @@ def thin(guess_in):
 
     guess_rd = rasterio.open(guess_in)
     guess_arr = guess_rd.read(1)
+    affine = guess_rd.transform
+
     guess_skel = skeletonize(guess_arr)
     guess_skel = guess_skel.astype('int32')
     
-    return guess_skel
+    return guess_skel, affine
 
 
 def raster_to_lines(guess_skel_in):
