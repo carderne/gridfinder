@@ -1,5 +1,5 @@
+#!python3
 # __init__.py
-#! python3
 
 """
 gridfinder package contains the following modules:
@@ -8,3 +8,5 @@ gridfinder package contains the following modules:
  - post.py : postprocess the algorithm output and check accuracy
  - _util.py : helper functions used internally
 """
+
+__version__ = '1.0.0'

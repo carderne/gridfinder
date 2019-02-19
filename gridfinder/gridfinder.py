@@ -1,5 +1,5 @@
+#!python3
 # gridfinder.py
-#! python3
 
 """
 Implements Djikstra's algorithm on a cost-array to create an MST.
@@ -48,7 +48,7 @@ def get_targets_costs(targets_in, costs_in):
     targets_ra = rasterio.open(targets_in)
     affine = targets_ra.transform
     targets = targets_ra.read(1)
-    
+
     costs_ra = rasterio.open(costs_in)
     costs = costs_ra.read(1)
 
@@ -70,7 +70,7 @@ def estimate_mem_use(targets, costs):
         2D array of targets.
     costs : numpy array
         2D array of costs.
-    
+
     Returns
     -------
     est_mem : float
@@ -88,7 +88,8 @@ def estimate_mem_use(targets, costs):
     return est_mem / 1e9
 
 
-def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, animate_path=None, silent=False):
+def optimise(targets, costs, start, jupyter=False, animate=False,
+             affine=None, animate_path=None, silent=False):
     """Run the Djikstra algorithm for the supplied arrays.
 
     Parameters
@@ -108,10 +109,10 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
         2D array with the distance (in cells) of each point from a 'found'
         on-grid point. Values of 0 imply that cell is part of an MV grid line.
     """
-        
+
     max_i = costs.shape[0]
-    max_j = costs.shape[1]    
-    
+    max_j = costs.shape[1]
+
     visited = np.zeros_like(targets, dtype=np.int8)
     dist = np.full_like(costs, np.nan, dtype=np.float32)
 
@@ -121,11 +122,11 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
     prev = np.full_like(costs, np.nan, dtype=object)
 
     dist[start] = 0
-    
+
     #       dist, loc
     queue = [[0, start]]
     heapify(queue)
-    
+
     def zero_and_heap_path(loc):
         """Zero the location's distance value and follow upstream doing same.
 
@@ -144,7 +145,7 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
 
             if type(prev_loc) == tuple:
                 zero_and_heap_path(prev_loc)
-    
+
     counter = 0
     progress = 0
     max_cells = targets.shape[0] * targets.shape[1]
@@ -157,36 +158,36 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
         current_i = current_loc[0]
         current_j = current_loc[1]
         current_dist = dist[current_loc]
-        
-        for x in range(-1,2):
-            for y in range(-1,2):
+
+        for x in range(-1, 2):
+            for y in range(-1, 2):
                 next_i = current_i + x
                 next_j = current_j + y
                 next_loc = (next_i, next_j)
-                
+
                 # ensure we're within bounds
                 if next_i < 0 or next_j < 0 or next_i >= max_i or next_j >= max_j:
                     continue
-                
+
                 # ensure we're not looking at the same spot
                 if next_loc == current_loc:
                     continue
-                
+
                 # skip if we've already set dist to 0
                 if dist[next_loc] == 0:
                     continue
-                
+
                 # if the location is connected
                 if targets[next_loc]:
                     prev[next_loc] = current_loc
                     zero_and_heap_path(next_loc)
-                
+
                 # otherwise it's a normal queue cell
                 else:
                     dist_add = costs[next_loc]
-                    if x == 0 or y == 0: # if this cell is a square up/down or left/right
+                    if x == 0 or y == 0:  # if this cell is  up/down/left/right
                         dist_add *= 1
-                    else: # or if it's diagonal
+                    else:  # or if it's diagonal
                         dist_add *= sqrt(2)
 
                     next_dist = current_dist + dist_add
@@ -214,7 +215,8 @@ def optimise(targets, costs, start, jupyter=False, animate=False, affine=None, a
                                 print(message)
                             if animate:
                                 i = int(progress)
-                                path = os.path.join(animate_path, f'arr{i:03d}.tif')
+                                path = os.path.join(animate_path,
+                                                    f'arr{i:03d}.tif')
                                 save_raster(path, dist, affine)
-                    
+
     return dist

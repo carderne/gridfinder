@@ -1,5 +1,5 @@
+#!python3
 # post.py
-#! python3
 
 """
 Post-processing for gridfinder package.
@@ -20,10 +20,10 @@ from skimage.morphology import skeletonize
 import shapely.wkt
 from shapely.geometry import Point, LineString
 import rasterio
-from rasterio.features import shapes, rasterize
+from rasterio.features import rasterize
 from rasterio.transform import xy
 
-from gridfinder._util import save_raster, clip_line_poly
+from gridfinder._util import clip_line_poly
 
 
 def threshold(dists_in, cutoff=0.0):
@@ -54,7 +54,7 @@ def threshold(dists_in, cutoff=0.0):
     guess[dists_r <= cutoff] = 1
 
     affine = dists_rd.transform
-    
+
     return guess, affine
 
 
@@ -79,7 +79,7 @@ def thin(guess_in):
 
     guess_skel = skeletonize(guess_arr)
     guess_skel = guess_skel.astype('int32')
-    
+
     return guess_skel, affine
 
 
@@ -91,7 +91,7 @@ def raster_to_lines(guess_skel_in):
     ----------
     guess_skel_in : str or Path
         Output from thin().
-    
+
     Returns
     -------
     guess_gdf : GeoDataFrame
@@ -110,19 +110,21 @@ def raster_to_lines(guess_skel_in):
         for col in range(0, max_col):
             loc = (row, col)
             if arr[loc] == 1:
-                for i in range(-1,2):
-                    for j in range(-1,2):
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
                         next_row = row + i
                         next_col = col + j
                         next_loc = (next_row, next_col)
-                        
+
                         # ensure we're within bounds
-                        if next_row < 0 or next_col < 0 or next_row >= max_row or next_col >= max_col:
+                        if next_row < 0 or next_col < 0:
+                            continue
+                        if next_row >= max_row or next_col >= max_col:
                             continue
                         # ensure we're not looking at the same spot
                         if next_loc == loc:
                             continue
-                            
+
                         if arr[next_loc] == 1:
                             line = (loc, next_loc)
                             rev = (line[1], line[0])
@@ -131,7 +133,8 @@ def raster_to_lines(guess_skel_in):
 
     real_lines = []
     for line in lines:
-        real = (xy(affine, line[0][0], line[0][1]), xy(affine, line[1][0], line[1][1]))
+        real = (xy(affine, line[0][0], line[0][1]),
+                xy(affine, line[1][0], line[1][1]))
         real_lines.append(real)
 
     shapes = []
@@ -178,10 +181,12 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     guesses = guesses_reader.read(1)
 
     grid_for_raster = [(row.geometry) for _, row in grid_clipped.iterrows()]
-    grid_raster = rasterize(grid_for_raster, out_shape=guesses_reader.shape, fill=1,
-                         default_value=0, all_touched=True, transform=guesses_reader.transform)
-    grid_buff_raster = rasterize(grid_buff, out_shape=guesses_reader.shape, fill=1,
-                         default_value=0, all_touched=True, transform=guesses_reader.transform)
+    grid_raster = rasterize(grid_for_raster, out_shape=guesses_reader.shape,
+                            fill=1, default_value=0, all_touched=True,
+                            transform=guesses_reader.transform)
+    grid_buff_raster = rasterize(grid_buff, out_shape=guesses_reader.shape,
+                                 fill=1, default_value=0, all_touched=True,
+                                 transform=guesses_reader.transform)
 
     grid_raster = flip_arr_values(grid_raster)
     grid_buff_raster = flip_arr_values(grid_buff_raster)
@@ -189,7 +194,7 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     tp = true_positives(guesses, grid_buff_raster)
     fn = false_negatives(guesses, grid_raster)
 
-    return tp, fn, 
+    return tp, fn
 
 
 def true_positives(guesses, truths):
@@ -215,8 +220,8 @@ def true_positives(guesses, truths):
 
     for x in range(0, rows):
         for y in range(0, cols):
-            guess = guesses[x,y]
-            truth = truths[x,y]
+            guess = guesses[x, y]
+            truth = truths[x, y]
             if guess == 1:
                 yes_guesses += 1
                 if guess == truth:
@@ -251,23 +256,25 @@ def false_negatives(guesses, truths):
 
     for x in range(0, rows):
         for y in range(0, cols):
-            guess = guesses[x,y]
-            truth = truths[x,y]
-            
+            guess = guesses[x, y]
+            truth = truths[x, y]
+
             if truth == 1:
                 actual_grid += 1
                 if guess != truth:
                     found = False
-                    for i in range(-5,6):
-                        for j in range(-5,6):
+                    for i in range(-5, 6):
+                        for j in range(-5, 6):
                             if i == 0 and j == 0:
                                 continue
-                            
+
                             shift_x = x+i
                             shift_y = y+j
-                            if shift_x < 0 or shift_y < 0 or shift_x >= rows or shift_y >= cols:
+                            if shift_x < 0 or shift_y < 0:
                                 continue
-            
+                            if shift_x >= rows or shift_y >= cols:
+                                continue
+
                             other_guess = guesses[shift_x, shift_y]
                             if other_guess == 1:
                                 found = True
@@ -281,7 +288,7 @@ def false_negatives(guesses, truths):
 
 def flip_arr_values(arr):
     """Simple helper function used by accuracy()"""
-    
+
     arr[arr == 1] = 2
     arr[arr == 0] = 1
     arr[arr == 2] = 0

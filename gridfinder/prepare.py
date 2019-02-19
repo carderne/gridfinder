@@ -1,5 +1,5 @@
+#!python3
 # prepare.py
-#! python3
 
 """
 Prepare input layers for gridfinder.
@@ -25,7 +25,7 @@ from scipy import signal
 import fiona
 import rasterio
 from rasterio.mask import mask
-from rasterio.features import shapes, rasterize
+from rasterio.features import rasterize
 from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
@@ -57,11 +57,12 @@ def clip_rasters(folder_in, folder_out, aoi_in):
         if file.endswith('.tif'):
             print(f'Doing {file}')
             ntl_rd = rasterio.open(os.path.join(folder_in, file))
-            ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
+            ntl, affine = mask(dataset=ntl_rd, shapes=coords,
+                               crop=True, nodata=0)
 
             if ntl.ndim == 3:
                 ntl = ntl[0]
-                
+
             save_raster(folder_out / file, ntl, affine)
 
 
@@ -93,7 +94,7 @@ def merge_rasters(folder, percentile=70):
         if file.endswith('.tif'):
             ntl_rd = rasterio.open(os.path.join(folder, file))
             rasters.append(ntl_rd.read(1))
-            
+
             if not affine:
                 affine = ntl_rd.transform
 
@@ -110,13 +111,14 @@ def filter_func(i, j):
     d_rows = abs(i - 20)
     d_cols = abs(j - 20)
     d = sqrt(d_rows**2 + d_cols**2)
-    
+
     if i == 20 and j == 20:
         return 0
-    elif d <= 20: 
+    elif d <= 20:
         return 1 / (1 + d/2)**3
     else:
         return 0.0
+
 
 def create_filter():
     """Create and return a numpy array filter to be applied to the raster."""
@@ -141,11 +143,12 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
     ntl_filter : numpy array, optional (defaults to create_filter())
         The filter will be convolved over the raster.
     threshold : float, optional (default 0.1.)
-        The threshold to apply after filtering, values above are considered electrified.
+        The threshold to apply after filtering, values above
+        are considered electrified.
     upsample_by : int, optional (default 2.)
         The factor by which to upsample the input raster, applied to both axes
-        (so a value of 2 results in a raster 4 times bigger). This is to allow the roads
-        detail to be captured in higher resolution.
+        (so a value of 2 results in a raster 4 times bigger). This is to
+        allow the roads detail to be captured in higher resolution.
 
     Returns
     -------
@@ -175,22 +178,22 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
     ntl_filtered = ntl - ntl_convolved
 
     ntl_interp = np.empty(shape=(1,  # same number of bands
-                                round(ntl.shape[0] * upsample_by),
-                                round(ntl.shape[1] * upsample_by)))
+                                 round(ntl.shape[0] * upsample_by),
+                                 round(ntl.shape[1] * upsample_by)))
 
     # adjust the new affine transform to the 150% smaller cell size
     newaff = Affine(affine.a / upsample_by, affine.b, affine.c,
-                        affine.d, affine.e / upsample_by, affine.f)
+                    affine.d, affine.e / upsample_by, affine.f)
     with fiona.Env():
         with rasterio.Env():
             reproject(
                 ntl_filtered, ntl_interp,
-                src_transform = affine,
-                dst_transform = newaff,
-                src_crs = {'init': 'epsg:4326'},
-                dst_crs = {'init': 'epsg:4326'},
-                resampling = Resampling.bilinear)
-        
+                src_transform=affine,
+                dst_transform=newaff,
+                src_crs={'init': 'epsg:4326'},
+                dst_crs={'init': 'epsg:4326'},
+                resampling=Resampling.bilinear)
+
     ntl_interp = ntl_interp[0]
 
     ntl_thresh = np.empty_like(ntl_interp)
@@ -226,7 +229,7 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     clipped, affine, crs = clip_raster(pop_in, aoi)
     clipped = clipped[0]
 
-    # We need to warp the population layer to exactly overlap cell for cell with targets
+    # We need to warp the population layer to exactly overlap with targets
     # First get array, affine and crs from targets (which is what we)
     targets_rd = rasterio.open(targets_in)
     targets = targets_rd.read(1)
@@ -234,18 +237,18 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     dest_affine = targets_rd.transform
     dest_crs = targets_rd.crs
 
-    # Then use reproject 
+    # Then use reproject
     with rasterio.Env():
         reproject(
-            source = clipped, 
-            destination = ghs_proj,
-            src_transform = affine,
-            dst_transform = dest_affine,
-            src_crs = crs,
-            dst_crs = dest_crs,
-            resampling = Resampling.bilinear)
+            source=clipped,
+            destination=ghs_proj,
+            src_transform=affine,
+            dst_transform=dest_affine,
+            src_crs=crs,
+            dst_crs=dest_crs,
+            resampling=Resampling.bilinear)
 
-    # Finally read to run algorithm to drop target blobs (continuous areas of target==1)
+    # Finally read to run algorithm to drop blobs (areas of target==1)
     # where there is no underlying population
 
     blobs = []
@@ -256,16 +259,16 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     def add_around(blob, cell):
         blob.append(cell)
         skip.append(cell)
-        
-        for x in range(-1,2):
-            for y in range(-1,2):
+
+        for x in range(-1, 2):
+            for y in range(-1, 2):
                 next_i = i + x
                 next_j = j + y
                 next_cell = (next_i, next_j)
-                
+
                 # ensure we're within bounds
                 if next_i >= 0 and next_j >= 0 and next_i < max_i and next_j < max_j:
-                    # ensure we're not looking at the same spot or one that's been done
+                    # ensure we're not looking at same spot or one that's done
                     if not next_cell == cell and next_cell not in skip:
                         # if it's an electrified cell
                         if targets[next_i][next_j] == 1:
@@ -275,10 +278,10 @@ def drop_zero_pop(targets_in, pop_in, aoi):
 
     for i in range(max_i):
         for j in range(max_j):
-            if targets[i][j] == 1 and (i, j) not in skip:          
+            if targets[i][j] == 1 and (i, j) not in skip:
                 blob = add_around(blob=[], cell=(i, j))
                 blobs.append(blob)
-                
+
     for blob in blobs:
         found = False
         for cell in blob:
@@ -304,7 +307,8 @@ def prepare_roads(roads_in, aoi_in, ntl_in):
     aoi_in : str, Path or GeoDataFrame
         AOI to clip roads.
     ntl_in : str, Path
-        Path to a raster file, only used for correct shape and affine of roads raster.
+        Path to a raster file, only used for correct shape and
+        affine of roads raster.
 
     Returns
     -------
@@ -339,12 +343,13 @@ def prepare_roads(roads_in, aoi_in, ntl_in):
 
     roads_clipped = clip_line_poly(roads, aoi)
 
-    # sort by weight descending
-    # so that lower weight (bigger roads) are processed last and overwrite higher weight roads
+    # sort by weight descending so that lower weight (bigger roads) are
+    # processed last and overwrite higher weight roads
     roads_clipped = roads_clipped.sort_values(by='weight', ascending=False)
 
     roads_for_raster = [(row.geometry, row.weight) for _, row in roads_clipped.iterrows()]
     roads_raster = rasterize(roads_for_raster, out_shape=shape, fill=1,
-                         default_value=0, all_touched=True, transform=affine)
+                             default_value=0, all_touched=True,
+                             transform=affine)
 
     return roads_raster, affine

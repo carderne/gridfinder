@@ -1,5 +1,5 @@
+#!python3
 # _util.py
-#! python3
 
 """
 Utility module used internally.
@@ -10,6 +10,7 @@ Functions:
 - clip_raster
 """
 
+import errno
 import os
 from pathlib import Path
 import json
@@ -37,7 +38,7 @@ def save_raster(file, raster, affine, crs=None):
     if not os.path.exists(os.path.dirname(file)):
         try:
             os.makedirs(os.path.dirname(file))
-        except OSError as exc: # Guard against race condition
+        except OSError as exc:  # Guard against race condition
             if exc.errno != errno.EEXIST:
                 raise
 
@@ -74,7 +75,8 @@ def clip_line_poly(line, clip_poly):
 
     # Create a box for the initial intersection
     bbox = poly.bounds
-    # Get a list of id's for each road line that overlaps the bounding box and subset the data to just those lines
+    # Get a list of id's for each road line that overlaps the bounding box
+    # and subset the data to just those lines
     sidx = list(spatial_index.intersection(bbox))
     shp_sub = line.iloc[sidx]
 
@@ -122,7 +124,7 @@ def clip_raster(raster, boundary, boundary_layer=None):
         raster = rasterio.open(raster)
 
     crs = raster.crs
-    
+
     if isinstance(boundary, Path):
         boundary = str(boundary)
     if isinstance(boundary, str):
@@ -131,7 +133,7 @@ def clip_raster(raster, boundary, boundary_layer=None):
         else:
             driver = None  # default to shapefile
             boundary_layer = ''  # because shapefiles have no layers
-    
+
         boundary = gpd.read_file(boundary, layer=boundary_layer, driver=driver)
 
     boundary = boundary.to_crs(crs=raster.crs)
