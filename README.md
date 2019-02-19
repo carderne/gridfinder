@@ -6,7 +6,7 @@ gridfinder uses NASA night time lights imagery to as an indicator of settlements
 
 The algorithm looks as follows in process, guessing the grid network for Uganda:
 
-[![Animated algorithm](gridfinder-animated.gif)]()
+[![Animated algorithm](https://raw.githubusercontent.com/carderne/gridfinder/master/gridfinder-animated.gif)](#)
 
 ## Input requirements
 gridfinder requires the following data sources:
