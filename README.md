@@ -1,4 +1,7 @@
 # gridfinder
+[![Documentation Status](https://readthedocs.org/projects/gridfinder/badge/?version=latest)](https://gridfinder.readthedocs.io/en/latest/?badge=latest)
+
+Documentation: https://gridfinder.readthedocs.io/en/latest/
 
 Algorithm for guessing MV grid network based on NTL. An adaptation of [this work from Facebook](https://github.com/facebookresearch/many-to-many-dijkstra).
 
