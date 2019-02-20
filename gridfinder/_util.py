@@ -43,12 +43,19 @@ def save_raster(file, raster, affine, crs=None):
                 raise
 
     if not crs:
-        crs = '+proj=latlong'
+        crs = "+proj=latlong"
 
-    filtered_out = rasterio.open(file, 'w', driver='GTiff',
-                                 height=raster.shape[0], width=raster.shape[1],
-                                 count=1, dtype=raster.dtype,
-                                 crs=crs, transform=affine)
+    filtered_out = rasterio.open(
+        file,
+        "w",
+        driver="GTiff",
+        height=raster.shape[0],
+        width=raster.shape[1],
+        count=1,
+        dtype=raster.dtype,
+        crs=crs,
+        transform=affine,
+    )
     filtered_out.write(raster, 1)
     filtered_out.close()
 
@@ -82,7 +89,7 @@ def clip_line_poly(line, clip_poly):
 
     # Clip the data - with these data
     clipped = shp_sub.copy()
-    clipped['geometry'] = shp_sub.intersection(poly)
+    clipped["geometry"] = shp_sub.intersection(poly)
     # remove null geometry values
     clipped = clipped[clipped.geometry.notnull()]
 
@@ -128,16 +135,16 @@ def clip_raster(raster, boundary, boundary_layer=None):
     if isinstance(boundary, Path):
         boundary = str(boundary)
     if isinstance(boundary, str):
-        if '.gpkg' in boundary:
-            driver = 'GPKG'
+        if ".gpkg" in boundary:
+            driver = "GPKG"
         else:
             driver = None  # default to shapefile
-            boundary_layer = ''  # because shapefiles have no layers
+            boundary_layer = ""  # because shapefiles have no layers
 
         boundary = gpd.read_file(boundary, layer=boundary_layer, driver=driver)
 
     boundary = boundary.to_crs(crs=raster.crs)
-    coords = [json.loads(boundary.to_json())['features'][0]['geometry']]
+    coords = [json.loads(boundary.to_json())["features"][0]["geometry"]]
 
     # mask/clip the raster using rasterio.mask
     clipped, affine = mask(dataset=raster, shapes=coords, crop=True)

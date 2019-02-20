@@ -52,7 +52,7 @@ def get_targets_costs(targets_in, costs_in):
     costs_ra = rasterio.open(costs_in)
     costs = costs_ra.read(1)
 
-    target_list = np.argwhere(targets == 1.)
+    target_list = np.argwhere(targets == 1.0)
     start = tuple(target_list[0].tolist())
 
     targets = targets.astype(np.int8)
@@ -88,8 +88,16 @@ def estimate_mem_use(targets, costs):
     return est_mem / 1e9
 
 
-def optimise(targets, costs, start, jupyter=False, animate=False,
-             affine=None, animate_path=None, silent=False):
+def optimise(
+    targets,
+    costs,
+    start,
+    jupyter=False,
+    animate=False,
+    affine=None,
+    animate_path=None,
+    silent=False,
+):
     """Run the Djikstra algorithm for the supplied arrays.
 
     Parameters
@@ -150,7 +158,7 @@ def optimise(targets, costs, start, jupyter=False, animate=False,
     progress = 0
     max_cells = targets.shape[0] * targets.shape[1]
     if jupyter:
-        handle = display(Markdown(''), display_id=True)
+        handle = display(Markdown(""), display_id=True)
 
     while len(queue):
         current = heappop(queue)
@@ -205,18 +213,17 @@ def optimise(targets, costs, start, jupyter=False, animate=False,
                         prev[next_loc] = current_loc
 
                         counter += 1
-                        progress_new = 100 * counter/max_cells
+                        progress_new = 100 * counter / max_cells
                         if int(progress_new) > int(progress):
                             progress = progress_new
-                            message = f'{progress:.2f} %'
+                            message = f"{progress:.2f} %"
                             if jupyter:
                                 handle.update(message)
                             elif not silent:
                                 print(message)
                             if animate:
                                 i = int(progress)
-                                path = os.path.join(animate_path,
-                                                    f'arr{i:03d}.tif')
+                                path = os.path.join(animate_path, f"arr{i:03d}.tif")
                                 save_raster(path, dist, affine)
 
     return dist

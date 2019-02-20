@@ -78,7 +78,7 @@ def thin(guess_in):
     affine = guess_rd.transform
 
     guess_skel = skeletonize(guess_arr)
-    guess_skel = guess_skel.astype('int32')
+    guess_skel = guess_skel.astype("int32")
 
     return guess_skel, affine
 
@@ -117,12 +117,14 @@ def raster_to_lines(guess_skel_in):
                         next_loc = (next_row, next_col)
 
                         # ensure we're within bounds
-                        if next_row < 0 or next_col < 0:
-                            continue
-                        if next_row >= max_row or next_col >= max_col:
-                            continue
                         # ensure we're not looking at the same spot
-                        if next_loc == loc:
+                        if (
+                            next_row < 0
+                            or next_col < 0
+                            or next_row >= max_row
+                            or next_col >= max_col
+                            or next_loc == loc
+                        ):
                             continue
 
                         if arr[next_loc] == 1:
@@ -133,8 +135,7 @@ def raster_to_lines(guess_skel_in):
 
     real_lines = []
     for line in lines:
-        real = (xy(affine, line[0][0], line[0][1]),
-                xy(affine, line[1][0], line[1][1]))
+        real = (xy(affine, line[0][0], line[0][1]), xy(affine, line[1][0], line[1][1]))
         real_lines.append(real)
 
     shapes = []
@@ -146,8 +147,8 @@ def raster_to_lines(guess_skel_in):
     guess_gdf = guess_gdf.drop(0, axis=1)
     guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=rast.crs, geometry=geometry)
 
-    guess_gdf['same'] = 0
-    guess_gdf = guess_gdf.dissolve(by='same')
+    guess_gdf["same"] = 0
+    guess_gdf = guess_gdf.dissolve(by="same")
 
     return guess_gdf
 
@@ -181,12 +182,22 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     guesses = guesses_reader.read(1)
 
     grid_for_raster = [(row.geometry) for _, row in grid_clipped.iterrows()]
-    grid_raster = rasterize(grid_for_raster, out_shape=guesses_reader.shape,
-                            fill=1, default_value=0, all_touched=True,
-                            transform=guesses_reader.transform)
-    grid_buff_raster = rasterize(grid_buff, out_shape=guesses_reader.shape,
-                                 fill=1, default_value=0, all_touched=True,
-                                 transform=guesses_reader.transform)
+    grid_raster = rasterize(
+        grid_for_raster,
+        out_shape=guesses_reader.shape,
+        fill=1,
+        default_value=0,
+        all_touched=True,
+        transform=guesses_reader.transform,
+    )
+    grid_buff_raster = rasterize(
+        grid_buff,
+        out_shape=guesses_reader.shape,
+        fill=1,
+        default_value=0,
+        all_touched=True,
+        transform=guesses_reader.transform,
+    )
 
     grid_raster = flip_arr_values(grid_raster)
     grid_buff_raster = flip_arr_values(grid_buff_raster)
@@ -268,8 +279,8 @@ def false_negatives(guesses, truths):
                             if i == 0 and j == 0:
                                 continue
 
-                            shift_x = x+i
-                            shift_y = y+j
+                            shift_x = x + i
+                            shift_y = y + j
                             if shift_x < 0 or shift_y < 0:
                                 continue
                             if shift_x >= rows or shift_y >= cols:
