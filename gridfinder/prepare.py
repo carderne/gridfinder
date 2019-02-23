@@ -238,7 +238,7 @@ def drop_zero_pop(targets_in, pop_in, aoi):
 
     # Clip population layer to AOI
     clipped, affine, crs = clip_raster(pop_in, aoi)
-    clipped = clipped[0]
+    # clipped = clipped[0]  # no longer needed, fixed in clip_raster
 
     # We need to warp the population layer to exactly overlap with targets
     # First get array, affine and crs from targets (which is what we)

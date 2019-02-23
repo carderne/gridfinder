@@ -20,7 +20,7 @@ import rasterio
 from rasterio.mask import mask
 
 
-def save_raster(file, raster, affine, crs=None):
+def save_raster(path, raster, affine, crs=None):
     """Save a raster to the specified file.
 
     Parameters
@@ -35,18 +35,15 @@ def save_raster(file, raster, affine, crs=None):
         CRS for the raster
     """
 
-    if not os.path.exists(os.path.dirname(file)):
-        try:
-            os.makedirs(os.path.dirname(file))
-        except OSError as exc:  # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
+    path = Path(path)
+    if not path.parents[0].exists():
+        path.mkdir(parents=True, exist_ok=True)
 
     if not crs:
         crs = "+proj=latlong"
 
     filtered_out = rasterio.open(
-        file,
+        path,
         "w",
         driver="GTiff",
         height=raster.shape[0],
@@ -148,5 +145,8 @@ def clip_raster(raster, boundary, boundary_layer=None):
 
     # mask/clip the raster using rasterio.mask
     clipped, affine = mask(dataset=raster, shapes=coords, crop=True)
+
+    if len(clipped.shape) >= 3:
+        clipped = clipped[0]
 
     return clipped, affine, crs
