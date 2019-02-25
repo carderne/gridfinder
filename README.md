@@ -1,5 +1,5 @@
 # gridfinder
-[![Documentation Status](https://readthedocs.org/projects/gridfinder/badge/?version=latest)](https://gridfinder.readthedocs.io/en/latest/?badge=latest)
+[![PyPI version](https://badge.fury.io/py/gridfinder.svg)](https://badge.fury.io/py/gridfinder) [![Documentation Status](https://readthedocs.org/projects/gridfinder/badge/?version=latest)](https://gridfinder.readthedocs.io/en/latest/?badge=latest)
 
 Documentation: https://gridfinder.readthedocs.io/en/latest/
 
@@ -44,6 +44,12 @@ These additional packages may be necessary depending on your configuration:
  - `matplotlib`
  - `seaborn`
 
+**Install with pip**
+
+```
+pip install gridfinder
+```
+
 **Install from GitHub**
 
 Download or clone the repository and install the required packages (preferably in a virtual environment):
@@ -53,4 +59,4 @@ git clone https://github.com/carderne/gridfinder.git
 cd gridfinder
 pip install -r requirements.txt
 ```
-You can run ```make test``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly.
+You can run ```./test.sh``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly. (It will fail if jupyter isn't installed!)
