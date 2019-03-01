@@ -53,16 +53,16 @@ def clip_rasters(folder_in, folder_out, aoi_in):
 
     coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
 
-    for file in os.listdir(folder_in):
-        if file.endswith(".tif"):
-            print(f"Doing {file}")
-            ntl_rd = rasterio.open(os.path.join(folder_in, file))
+    for file_path in os.listdir(folder_in):
+        if file_path.endswith(".tif"):
+            print(f"Doing {file_path}")
+            ntl_rd = rasterio.open(os.path.join(folder_in, file_path))
             ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
 
             if ntl.ndim == 3:
                 ntl = ntl[0]
 
-            save_raster(folder_out / file, ntl, affine)
+            save_raster(folder_out / file_path, ntl, affine)
 
 
 def merge_rasters(folder, percentile=70):

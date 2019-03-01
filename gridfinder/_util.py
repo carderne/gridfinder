@@ -37,7 +37,7 @@ def save_raster(path, raster, affine, crs=None):
 
     path = Path(path)
     if not path.parents[0].exists():
-        path.mkdir(parents=True, exist_ok=True)
+        path.parents[0].mkdir(parents=True, exist_ok=True)
 
     if not crs:
         crs = "+proj=latlong"
