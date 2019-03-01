@@ -48,7 +48,8 @@ extensions = [
     'm2r',
 ]
 
-autodoc_mock_imports = ["numpy", "scikit-image", "rasterio", "geopandas", "Rtree", "affine", "descartes", "Pillow", "pyproj", "pytz"]
+autodoc_mock_imports = ["numpy", "scikit-image", "rasterio", "geopandas", "Rtree",
+                        "affine", "descartes", "Pillow", "pyproj", "pytz", "IPython"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
