@@ -4,7 +4,8 @@
 """
 Prepare input layers for gridfinder.
 
-Functions
+Functions:
+
 - clip_rasters
 - merge_rasters
 - filter_func

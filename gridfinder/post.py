@@ -1,12 +1,11 @@
-#!python3
-# post.py
-
 """
 Post-processing for gridfinder package.
 
-Functions
+Functions:
+
 - threshold
-- guess2geom
+- thin
+- raster_to_lines
 - accuracy
 - true_positives
 - false_negatives

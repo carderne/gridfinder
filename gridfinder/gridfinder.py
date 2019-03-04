@@ -1,14 +1,11 @@
-#!python3
-# gridfinder.py
-
 """
 Implements Djikstra's algorithm on a cost-array to create an MST.
 
 Functions:
+
 - get_targets_costs
 - estimate_mem_use
 - optimise
-
 """
 
 import os
