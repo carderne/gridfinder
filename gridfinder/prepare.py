@@ -1,6 +1,3 @@
-#!python3
-# prepare.py
-
 """
 Prepare input layers for gridfinder.
 

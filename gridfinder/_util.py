@@ -8,8 +8,6 @@ Functions:
 - clip_raster
 """
 
-import errno
-import os
 from pathlib import Path
 import json
 
