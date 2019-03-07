@@ -1,5 +1,5 @@
 """
-Implements Djikstra's algorithm on a cost-array to create an MST.
+Implements Dijkstra's algorithm on a cost-array to create an MST.
 
 Functions:
 
@@ -95,7 +95,7 @@ def optimise(
     animate_path=None,
     silent=False,
 ):
-    """Run the Djikstra algorithm for the supplied arrays.
+    """Run the Dijkstra algorithm for the supplied arrays.
 
     Parameters
     ----------

@@ -5,7 +5,7 @@ import gridfinder
 long_description = """
 gridfinder uses NASA night time lights imagery to as an indicator of 
 settlements/towns with grid electricity access. Then a minimum spanning 
-tree is calculated for these connect points, using the Djikstra 
+tree is calculated for these connect points, using the Dijkstra 
 algorithm and using existing road networks as a cost function. 
 """
 
