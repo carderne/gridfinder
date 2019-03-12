@@ -12,6 +12,8 @@ Functions:
 - flip_arr_values
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -30,7 +32,7 @@ def threshold(dists_in, cutoff=0.0):
 
     Parameters
     ----------
-    dists_in : numpy array
+    dists_in : path-like or numpy array
         2D array output from gridfinder algorithm.
     cutoff : float, optional (default 0.5.)
         Cutoff value below which consider the cells to be grid.
@@ -42,19 +44,26 @@ def threshold(dists_in, cutoff=0.0):
     affine: affine.Affine
         Affine transformation for raster.
     """
+    if isinstance(dists_in, (str, Path)):
+        dists_rd = rasterio.open(dists_in)
+        dists_r = dists_rd.read(1)
+        affine = dists_rd.transform
 
-    dists_rd = rasterio.open(dists_in)
-    dists_r = dists_rd.read(1)
+        guess = dists_r.copy()
+        guess[dists_r > cutoff] = 0
+        guess[dists_r <= cutoff] = 1
 
-    guess = np.empty_like(dists_r)
-    guess[:] = dists_r[:]
+        return guess, affine
 
-    guess[dists_r > cutoff] = 0
-    guess[dists_r <= cutoff] = 1
+    elif isinstance(dists_in, np.ndarray):
+        guess = dists_in.copy()
+        guess[dists_in > cutoff] = 0
+        guess[dists_in <= cutoff] = 1
 
-    affine = dists_rd.transform
+        return guess
 
-    return guess, affine
+    else:
+        raise ValueError
 
 
 def thin(guess_in):
@@ -63,23 +72,35 @@ def thin(guess_in):
 
     Parameters
     ----------
-    guess_in : str or Path
+    guess_in : path-like or 2D array
         Output from threshold().
 
     Returns
     -------
-    guess_skel : numpu array
+    guess_skel : numpy array
         Thinned version.
+    affine : Affine
+        Only if path-like supplied.
     """
 
-    guess_rd = rasterio.open(guess_in)
-    guess_arr = guess_rd.read(1)
-    affine = guess_rd.transform
+    if isinstance(guess_in, (str, Path)):
+        guess_rd = rasterio.open(guess_in)
+        guess_arr = guess_rd.read(1)
+        affine = guess_rd.transform
 
-    guess_skel = skeletonize(guess_arr)
-    guess_skel = guess_skel.astype("int32")
+        guess_skel = skeletonize(guess_arr)
+        guess_skel = guess_skel.astype("int32")
 
-    return guess_skel, affine
+        return guess_skel, affine
+
+    elif isinstance(guess_in, np.ndarray):
+        guess_skel = skeletonize(guess_in)
+        guess_skel = guess_skel.astype("int32")
+
+        return guess_skel
+
+    else:
+        raise ValueError
 
 
 def raster_to_lines(guess_skel_in):
@@ -88,7 +109,7 @@ def raster_to_lines(guess_skel_in):
 
     Parameters
     ----------
-    guess_skel_in : str or Path
+    guess_skel_in : path-like
         Output from thin().
 
     Returns
