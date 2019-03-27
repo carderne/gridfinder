@@ -98,7 +98,7 @@ def clip_raster(raster, boundary, boundary_layer=None):
     raster : string, pathlib.Path or rasterio.io.DataSetReader
         Location of or already opened raster.
     boundary : string, pathlib.Path or geopandas.GeoDataFrame
-        The poylgon by which to clip the raster.
+        The polygon by which to clip the raster.
     boundary_layer : string, optional
         For multi-layer files (like GeoPackage), specify the layer to be used.
 
