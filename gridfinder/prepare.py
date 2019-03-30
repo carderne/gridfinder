@@ -350,6 +350,9 @@ def prepare_roads(roads_in, aoi_in, ntl_in):
     roads.loc[roads["highway"] == "residential", "weight"] = 1 / 4
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
+    # Power lines get weight 0
+    roads.loc[roads["power"] == "line", "weight"] = 0
+
     roads = roads[roads.weight != 1]
 
     roads_clipped = clip_line_poly(roads, aoi)
