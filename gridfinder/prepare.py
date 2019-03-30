@@ -31,7 +31,7 @@ import geopandas as gpd
 from gridfinder._util import clip_line_poly, save_raster, clip_raster
 
 
-def clip_rasters(folder_in, folder_out, aoi_in):
+def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
     """Read continental rasters one at a time, clip to AOI and save
 
     Parameters
@@ -53,7 +53,8 @@ def clip_rasters(folder_in, folder_out, aoi_in):
 
     for file_path in os.listdir(folder_in):
         if file_path.endswith(".tif"):
-            print(f"Doing {file_path}")
+            if debug:
+                print(f"Doing {file_path}")
             ntl_rd = rasterio.open(os.path.join(folder_in, file_path))
             ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
 
