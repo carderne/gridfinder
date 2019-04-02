@@ -98,7 +98,7 @@ def merge_rasters(folder, percentile=70):
 
     raster_arr = np.array(rasters)
 
-    raster_merged = np.nanpercentile(raster_arr, percentile, axis=0)
+    raster_merged = np.percentile(raster_arr, percentile, axis=0)
 
     return raster_merged, affine
 
