@@ -2,6 +2,7 @@
 server/
 test_output/
 quickrun.py
+filter.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -110,12 +110,10 @@ def filter_func(i, j):
     d_cols = abs(j - 20)
     d = sqrt(d_rows ** 2 + d_cols ** 2)
 
-    if i == 20 and j == 20:
-        return 0
-    elif d <= 20:
-        return 1 / (1 + d / 2) ** 3
-    else:
+    if d == 0:
         return 0.0
+    else:
+        return 1 / (1 + d / 2) ** 3
 
 
 def create_filter():
@@ -307,7 +305,7 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     return targets
 
 
-def prepare_roads(roads_in, aoi_in, ntl_in):
+def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     """Prepare a roads feature layer for use in algorithm.
 
     Parameters
@@ -351,7 +349,7 @@ def prepare_roads(roads_in, aoi_in, ntl_in):
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
     # Power lines get weight 0
-    roads.loc[roads["power"] == "line", "weight"] = 0
+    roads.loc[roads["highway"] == "motorway", "weight"] = 0
 
     roads = roads[roads.weight != 1]
 

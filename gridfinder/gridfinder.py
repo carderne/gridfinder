@@ -9,6 +9,7 @@ Functions:
 """
 
 import os
+import sys
 from math import sqrt
 from heapq import heapify, heappush, heappop
 import pickle
@@ -18,6 +19,8 @@ import rasterio
 from IPython.display import display, Markdown
 
 from gridfinder._util import save_raster
+
+sys.setrecursionlimit(100000)
 
 
 def get_targets_costs(targets_in, costs_in):

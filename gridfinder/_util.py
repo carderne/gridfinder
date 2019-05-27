@@ -16,7 +16,7 @@ import rasterio
 from rasterio.mask import mask
 
 
-def save_raster(path, raster, affine, crs=None):
+def save_raster(path, raster, affine, crs=None, nodata=0):
     """Save a raster to the specified file.
 
     Parameters
@@ -48,6 +48,7 @@ def save_raster(path, raster, affine, crs=None):
         dtype=raster.dtype,
         crs=crs,
         transform=affine,
+        nodata=nodata,
     )
     filtered_out.write(raster, 1)
     filtered_out.close()
