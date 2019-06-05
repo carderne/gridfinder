@@ -11,7 +11,7 @@ The algorithm looks as follows in process, guessing the grid network for Uganda:
 
 ## Input requirements
 gridfinder requires the following data sources:
-- NASA VIIRS data, monthly and annual composites available [here](https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html).
+- VIIRS data, monthly and annual composites available [here](https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html).
 - OSM highway data, most easily available using the [HOT Export Tool](https://export.hotosm.org/en/v3/), otherwise [BBBike](https://extract.bbbike.org/) or [geofabrik](https://download.geofabrik.de/), depending on your needs.
 
 ## Model usage
