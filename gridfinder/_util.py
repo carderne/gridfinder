@@ -124,8 +124,6 @@ def clip_raster(raster, boundary, boundary_layer=None):
     if isinstance(raster, str):
         raster = rasterio.open(raster)
 
-    crs = raster.crs
-
     if isinstance(boundary, Path):
         boundary = str(boundary)
     if isinstance(boundary, str):
@@ -137,7 +135,8 @@ def clip_raster(raster, boundary, boundary_layer=None):
 
         boundary = gpd.read_file(boundary, layer=boundary_layer, driver=driver)
 
-    boundary = boundary.to_crs(crs=raster.crs)
+    if not (boundary.crs == raster.crs or boundary.crs == raster.crs.data):
+        boundary = boundary.to_crs(crs=raster.crs)
     coords = [json.loads(boundary.to_json())["features"][0]["geometry"]]
 
     # mask/clip the raster using rasterio.mask
@@ -146,4 +145,4 @@ def clip_raster(raster, boundary, boundary_layer=None):
     if len(clipped.shape) >= 3:
         clipped = clipped[0]
 
-    return clipped, affine, crs
+    return clipped, affine, raster.crs
