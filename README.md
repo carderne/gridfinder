@@ -31,16 +31,17 @@ gridfinder requires Python >= 3.5 with the following packages installed:
 These additional packages may be necessary depending on your configuration:
  - `Rtree` >= 0.8.3
  - `affine` >= 2.2.1
- - `descartes`
  - `Pillow` >= 5.3.0
  - `pyproj` >= 1.9.5.1
  - `pytz` >= 2018.7
+ - `descartes`
 
  And these for using an interactive notebook:
  - `IPython`
  - `jupyter`
  - `matplotlib`
  - `seaborn`
+ - `folium`
 
 **Install with pip**
 

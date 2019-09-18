@@ -5,10 +5,11 @@
 rm -r test_output || true
 
 # convert the example notebook to a script
-jupyter nbconvert --to script example.ipynb
+python -m jupyter nbconvert --to script example.ipynb
 
-# and disable Jupyter display handle output
+# disable Jupyter and plt.imshow output
 sed -i -e 's/jupyter=True/jupyter=False/g' example.py
+sed -i -e 's/plt.imshow(.*)//g' example.py
 
 # activate virtualenv if present but continue anyway
 source /home/chris/.envs/gridfinder/bin/activate || true

@@ -169,6 +169,7 @@ def raster_to_lines(guess_skel_in):
 
     guess_gdf["same"] = 0
     guess_gdf = guess_gdf.dissolve(by="same")
+    guess_gdf = guess_gdf.to_crs(epsg=4326)
 
     return guess_gdf
 
