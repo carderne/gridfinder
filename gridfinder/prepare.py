@@ -349,7 +349,7 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
     # Power lines get weight 0
-    roads.loc[roads["highway"] == "motorway", "weight"] = 0
+    roads.loc[roads["power"] == "line", "weight"] = 0
 
     roads = roads[roads.weight != 1]
 
