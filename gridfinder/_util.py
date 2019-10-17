@@ -85,7 +85,7 @@ def clip_line_poly(line, clip_poly):
     clipped = shp_sub.copy()
     clipped["geometry"] = shp_sub.intersection(poly)
     # remove null geometry values
-    clipped = clipped[clipped.geometry.notnull()]
+    clipped = clipped[~clipped.is_empty]
 
     return clipped
 

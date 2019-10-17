@@ -337,6 +337,7 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
         aoi = gpd.read_file(aoi_in)
 
     roads = gpd.read_file(roads_in)
+    roads = clip_line_poly(roads, aoi)
 
     roads["weight"] = 1
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
@@ -353,15 +354,11 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
 
     roads = roads[roads.weight != 1]
 
-    roads_clipped = clip_line_poly(roads, aoi)
-
     # sort by weight descending so that lower weight (bigger roads) are
     # processed last and overwrite higher weight roads
-    roads_clipped = roads_clipped.sort_values(by="weight", ascending=False)
+    roads = roads.sort_values(by="weight", ascending=False)
 
-    roads_for_raster = [
-        (row.geometry, row.weight) for _, row in roads_clipped.iterrows()
-    ]
+    roads_for_raster = [(row.geometry, row.weight) for _, row in roads.iterrows()]
     roads_raster = rasterize(
         roads_for_raster,
         out_shape=shape,
