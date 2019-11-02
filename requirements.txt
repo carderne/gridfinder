@@ -10,7 +10,7 @@ jupyter==1.0.0
 matplotlib==3.1.0
 numpy==1.16.4
 pandas==0.24.2
-Pillow==6.0.0
+Pillow==6.2.0
 pyproj==2.2.0
 pytz==2019.1
 rasterio==1.0.24
