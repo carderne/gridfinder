@@ -19,9 +19,7 @@ gridfinder requires the following data sources:
 To get to grips with the API and steps in the model, open the Jupyter notebook `example.ipynb`. This repository  includes the input data needed to do a test run for Burundi, so it should be a matter of openening the notebook and running all cells.
 
 ## Installation
-
-**Requirements**
-
+### Requirements
 gridfinder requires Python >= 3.5 with the following packages installed:
  - `numpy` >=1.2.0
  - `scikit-image` >=0.14.1
@@ -43,19 +41,19 @@ These additional packages may be necessary depending on your configuration:
  - `seaborn`
  - `folium`
 
-**Install with pip**
+### Install with pip
 
-```
-pip install gridfinder
-```
+    pip install gridfinder
 
-**Install from GitHub**
+**Note:** On some operating systems (Ubuntu 18.04), you may get an error about `libspatialindex`. To overcome this on Ubuntu, run:
 
+    sudo apt install libspatialindex-dev
+
+### Install from GitHub
 Download or clone the repository and install the required packages (preferably in a virtual environment):
 
-```
-git clone https://github.com/carderne/gridfinder.git
-cd gridfinder
-pip install -r requirements.txt
-```
+    git clone https://github.com/carderne/gridfinder.git
+    cd gridfinder
+    pip install -r requirements.txt
+
 You can run ```./test.sh``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly. (It will fail if jupyter isn't installed!)
