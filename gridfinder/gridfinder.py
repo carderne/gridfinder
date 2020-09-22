@@ -197,6 +197,7 @@ def optimise(
                         dist_add *= 1
                     else:  # or if it's diagonal
                         dist_add *= sqrt(2)
+
                     next_dist = current_dist + dist_add
 
                     if visited[next_loc]:
