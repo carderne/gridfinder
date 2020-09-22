@@ -197,11 +197,10 @@ def optimise(
                         dist_add *= 1
                     else:  # or if it's diagonal
                         dist_add *= sqrt(2)
-
                     next_dist = current_dist + dist_add
 
                     if visited[next_loc]:
-                        if next_dist + 0.4 < dist[next_loc]:
+                        if next_dist < dist[next_loc]:
                             dist[next_loc] = next_dist
                             prev[next_loc] = current_loc
                             heappush(queue, [next_dist, next_loc])
