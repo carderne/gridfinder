@@ -338,7 +338,7 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
 
     roads_masked = gpd.read_file(roads_in, mask=aoi)
     roads = gpd.sjoin(roads_masked, aoi, how="inner", op="intersects")
-    roads = roads[['highway', 'geometry']]
+    roads = roads[roads_masked.columns]
 
     roads["weight"] = 1
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
