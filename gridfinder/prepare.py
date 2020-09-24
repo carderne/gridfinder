@@ -305,7 +305,7 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     return targets
 
 
-def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
+def prepare_roads(roads_in, aoi_in, ntl_in):
     """Prepare a roads feature layer for use in algorithm.
 
     Parameters
