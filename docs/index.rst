@@ -1,10 +1,19 @@
-.. mdinclude:: ../README.md
+gridfinder
+==============================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :caption: Guides and Tutorials
+   :glob:
 
-   reference
+   *
+
+
+.. toctree::
+   :caption: Modules
+
+   gridfinder/index
+
+
 
 Indices and tables
 ==================

@@ -1,26 +1,22 @@
-from distutils.core import setup
+from setuptools import find_packages, setup
 
-import gridfinder
-
-long_description = """
-gridfinder uses NASA night time lights imagery to as an indicator of 
-settlements/towns with grid electricity access. Then a minimum spanning 
-tree is calculated for these connect points, using the Dijkstra 
-algorithm and using existing road networks as a cost function. 
-"""
+test_requirements = ["pytest"]
+docs_requirements = [
+    "Sphinx==2.4.2",
+    "sphinxcontrib-websupport==1.2.0",
+    "sphinx_rtd_theme",
+]
 
 setup(
     name="gridfinder",
-    version=gridfinder.__version__,
-    author="Chris Arderne",
-    author_email="chris@rdrn.me",
-    description="Algorithm for guessing MV grid network based on night time lights",
-    long_description=long_description,
-    url="https://github.com/carderne/gridfinder",
-    packages=["gridfinder"],
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-        "Operating System :: OS Independent",
-    ],
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
+    include_package_data=True,
+    version="0.1.0",
+    description="Library for gridfinder",
+    install_requires=open("requirements.txt").readlines(),
+    setup_requires=["wheel"],
+    tests_require=test_requirements,
+    extras_require={"test": test_requirements, "docs": docs_requirements},
+    author="appliedAI and Chris Ardene",
 )

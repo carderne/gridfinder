@@ -43,6 +43,10 @@ def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
     aoi_in : str, Path
         Path to an AOI file (readable by Fiona) to use for clipping.
     """
+    if isinstance(folder_in, str):
+        folder_in = Path(folder_in)
+    if isinstance(folder_out, str):
+        folder_out = Path(folder_out)
 
     if isinstance(aoi_in, gpd.GeoDataFrame):
         aoi = aoi_in

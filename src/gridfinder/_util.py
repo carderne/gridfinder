@@ -7,13 +7,15 @@ Functions:
 - clip_line_poly
 - clip_raster
 """
-
-from pathlib import Path
 import json
+import logging
+from pathlib import Path
 
 import geopandas as gpd
 import rasterio
 from rasterio.mask import mask
+
+log = logging.getLogger(__name__)
 
 
 def save_raster(path, raster, affine, crs=None, nodata=0):
@@ -21,7 +23,7 @@ def save_raster(path, raster, affine, crs=None, nodata=0):
 
     Parameters
     ----------
-    file : str
+    path : str
         Output file path
     raster : numpy.array
         2D numpy array containing raster values
@@ -34,6 +36,10 @@ def save_raster(path, raster, affine, crs=None, nodata=0):
     path = Path(path)
     if not path.parents[0].exists():
         path.parents[0].mkdir(parents=True, exist_ok=True)
+
+    if path.exists():
+        log.warning(f"Deleting {path}")
+        path.unlink()
 
     if not crs:
         crs = "+proj=latlong"
