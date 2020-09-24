@@ -194,15 +194,15 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
         aoi = gpd.read_file(aoi_in)
 
     grid_masked = gpd.read_file(grid_in, mask=aoi)
-    grid_clipped = gpd.sjoin(grid_masked, aoi, how="inner", op="intersects")
-    grid_clipped = grid_clipped[grid_clipped.columns]
+    grid = gpd.sjoin(grid_masked, aoi, how="inner", op="intersects")
+    grid = grid[grid_masked.columns]
 
-    grid_buff = grid_clipped.buffer(buffer_amount)
+    grid_buff = grid.buffer(buffer_amount)
 
     guesses_reader = rasterio.open(guess_in)
     guesses = guesses_reader.read(1)
 
-    grid_for_raster = [(row.geometry) for _, row in grid_clipped.iterrows()]
+    grid_for_raster = [(row.geometry) for _, row in grid.iterrows()]
     grid_raster = rasterize(
         grid_for_raster,
         out_shape=guesses_reader.shape,
