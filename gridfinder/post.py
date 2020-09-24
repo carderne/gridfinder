@@ -24,8 +24,6 @@ import rasterio
 from rasterio.features import rasterize
 from rasterio.transform import xy
 
-from gridfinder._util import clip_line_poly
-
 
 def threshold(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.

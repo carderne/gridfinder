@@ -28,7 +28,7 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import clip_line_poly, save_raster, clip_raster
+from gridfinder._util import save_raster, clip_raster
 
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
