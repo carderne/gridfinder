@@ -24,8 +24,6 @@ import rasterio
 from rasterio.features import rasterize
 from rasterio.transform import xy
 
-from gridfinder._util import clip_line_poly
-
 
 def threshold(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
@@ -195,14 +193,16 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     else:
         aoi = gpd.read_file(aoi_in)
 
-    grid = gpd.read_file(grid_in)
-    grid_clipped = clip_line_poly(grid, aoi)
-    grid_buff = grid_clipped.buffer(buffer_amount)
+    grid_masked = gpd.read_file(grid_in, mask=aoi)
+    grid = gpd.sjoin(grid_masked, aoi, how="inner", op="intersects")
+    grid = grid[grid_masked.columns]
+
+    grid_buff = grid.buffer(buffer_amount)
 
     guesses_reader = rasterio.open(guess_in)
     guesses = guesses_reader.read(1)
 
-    grid_for_raster = [(row.geometry) for _, row in grid_clipped.iterrows()]
+    grid_for_raster = [(row.geometry) for _, row in grid.iterrows()]
     grid_raster = rasterize(
         grid_for_raster,
         out_shape=guesses_reader.shape,

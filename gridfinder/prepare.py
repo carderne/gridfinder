@@ -28,7 +28,7 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import clip_line_poly, save_raster, clip_raster
+from gridfinder._util import save_raster, clip_raster
 
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
@@ -305,7 +305,7 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     return targets
 
 
-def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
+def prepare_roads(roads_in, aoi_in, ntl_in):
     """Prepare a roads feature layer for use in algorithm.
 
     Parameters
@@ -336,8 +336,9 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     else:
         aoi = gpd.read_file(aoi_in)
 
-    roads = gpd.read_file(roads_in)
-    roads = clip_line_poly(roads, aoi)
+    roads_masked = gpd.read_file(roads_in, mask=aoi)
+    roads = gpd.sjoin(roads_masked, aoi, how="inner", op="intersects")
+    roads = roads[roads_masked.columns]
 
     roads["weight"] = 1
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
@@ -350,7 +351,8 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
     # Power lines get weight 0
-    roads.loc[roads["power"] == "line", "weight"] = 0
+    if "power" in roads:
+        roads.loc[roads["power"] == "line", "weight"] = 0
 
     roads = roads[roads.weight != 1]
 
