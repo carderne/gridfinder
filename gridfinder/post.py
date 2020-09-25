@@ -59,7 +59,7 @@ def read_and_threshold_distances(dists_in, cutoff=0.0):
 
 
 def _threshold_array(arr, cutoff):
-    return (arr <= cutoff) * np.ones_like(arr.shape)
+    return (arr <= cutoff) * np.ones_like(arr)
 
 
 def thin(guess_in):
