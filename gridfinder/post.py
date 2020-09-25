@@ -27,7 +27,7 @@ from rasterio.transform import xy
 from gridfinder._util import clip_line_poly
 
 
-def threshold(dists_in, cutoff=0.0):
+def read_and_threshold_distances(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -41,29 +41,21 @@ def threshold(dists_in, cutoff=0.0):
     -------
     guess : numpy array
         Binary representation of input array.
-    affine: affine.Affine
-        Affine transformation for raster.
     """
     if isinstance(dists_in, (str, Path)):
         dists_rd = rasterio.open(dists_in)
         dists_r = dists_rd.read(1)
-        affine = dists_rd.transform
-
-        guess = dists_r.copy()
-        guess[dists_r > cutoff] = 0
-        guess[dists_r <= cutoff] = 1
-
-        return guess, affine
+        return _threshold_array(dists_r, cutoff)
 
     elif isinstance(dists_in, np.ndarray):
-        guess = dists_in.copy()
-        guess[dists_in > cutoff] = 0
-        guess[dists_in <= cutoff] = 1
-
-        return guess
+        return _threshold_array(dists_in, cutoff)
 
     else:
-        raise ValueError
+        raise ValueError("Please provide either a file path or a numpy.ndarray.")
+
+
+def _threshold_array(arr, cutoff):
+    return (arr <= cutoff) * np.ones_like(arr.shape)
 
 
 def thin(guess_in):
