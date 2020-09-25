@@ -59,6 +59,8 @@ def read_and_threshold_distances(dists_in, cutoff=0.0):
 
 
 def _threshold_array(arr, cutoff):
+    """Return an array where values are 1. if smaller than cutoff,
+     and 0. otherwise"""
     return (arr <= cutoff) * np.ones_like(arr)
 
 
