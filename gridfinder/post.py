@@ -27,6 +27,12 @@ from rasterio.transform import xy
 from gridfinder._util import clip_line_poly
 
 
+def _read_raster(filepath):
+    file = rasterio.open(filepath)
+    file_read = file.read(1)
+    return file_read
+
+
 def read_and_threshold_distances(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
@@ -43,9 +49,7 @@ def read_and_threshold_distances(dists_in, cutoff=0.0):
         Binary representation of input array.
     """
     if isinstance(dists_in, (str, Path)):
-        dists_rd = rasterio.open(dists_in)
-        dists_r = dists_rd.read(1)
-        return _threshold_array(dists_r, cutoff)
+        return _threshold_array(_read_raster(dists_in), cutoff)
 
     elif isinstance(dists_in, np.ndarray):
         return _threshold_array(dists_in, cutoff)
@@ -71,28 +75,18 @@ def thin(guess_in):
     -------
     guess_skel : numpy array
         Thinned version.
-    affine : Affine
-        Only if path-like supplied.
     """
 
     if isinstance(guess_in, (str, Path)):
-        guess_rd = rasterio.open(guess_in)
-        guess_arr = guess_rd.read(1)
-        affine = guess_rd.transform
-
-        guess_skel = skeletonize(guess_arr)
-        guess_skel = guess_skel.astype("int32")
-
-        return guess_skel, affine
+        guess_skel = skeletonize(_read_raster(guess_in))
 
     elif isinstance(guess_in, np.ndarray):
         guess_skel = skeletonize(guess_in)
-        guess_skel = guess_skel.astype("int32")
-
-        return guess_skel
 
     else:
-        raise ValueError
+        raise ValueError("Please provide either a file path or a numpy.ndarray.")
+
+    return guess_skel.astype("int32")
 
 
 def raster_to_lines(guess_skel_in):
