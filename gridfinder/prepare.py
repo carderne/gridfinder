@@ -336,8 +336,9 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     else:
         aoi = gpd.read_file(aoi_in)
 
-    roads = gpd.read_file(roads_in)
-    roads = clip_line_poly(roads, aoi)
+    roads_masked = gpd.read_file(roads_in, mask=aoi)
+    roads = gpd.sjoin(roads_masked, aoi, how="inner", op="intersects")
+    roads = roads[roads_masked.columns]
 
     roads["weight"] = 1
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
@@ -350,7 +351,8 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
     # Power lines get weight 0
-    roads.loc[roads["power"] == "line", "weight"] = 0
+    if "power" in roads:
+        roads.loc[roads["power"] == "line", "weight"] = 0
 
     roads = roads[roads.weight != 1]
 
