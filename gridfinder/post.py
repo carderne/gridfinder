@@ -28,12 +28,30 @@ from gridfinder._util import clip_line_poly
 
 
 def _read_raster(filepath):
+    """
+    Read a raster file and return its content and affine transformation.
+
+    Parameters
+    ----------
+    filepath: path-like object
+
+    Returns
+    -------
+    file_read: numpy array
+        Representation of raster file
+    transform: numpy array
+        The affine transformation of the raster file.
+    crs: rasterio.crs.CRS
+        Coordinate reference system
+    """
     file = rasterio.open(filepath)
     file_read = file.read(1)
-    return file_read
+    transform = file.transform
+    crs = file.crs
+    return file_read, transform, crs
 
 
-def read_and_threshold_distances(dists_in, cutoff=0.0):
+def distance_to_connected_locations(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -49,7 +67,8 @@ def read_and_threshold_distances(dists_in, cutoff=0.0):
         Binary representation of input array.
     """
     if isinstance(dists_in, (str, Path)):
-        return _threshold_array(_read_raster(dists_in), cutoff)
+        dists, _, _ = _read_raster(dists_in)
+        return _threshold_array(dists, cutoff)
 
     elif isinstance(dists_in, np.ndarray):
         return _threshold_array(dists_in, cutoff)
@@ -80,7 +99,8 @@ def thin(guess_in):
     """
 
     if isinstance(guess_in, (str, Path)):
-        guess_skel = skeletonize(_read_raster(guess_in))
+        guess, _, _ = _read_raster(guess_in)
+        guess_skel = skeletonize(guess)
 
     elif isinstance(guess_in, np.ndarray):
         guess_skel = skeletonize(guess_in)
@@ -106,9 +126,7 @@ def raster_to_lines(guess_skel_in):
         Converted to geometry.
     """
 
-    rast = rasterio.open(guess_skel_in)
-    arr = rast.read(1)
-    affine = rast.transform
+    arr, affine, crs = _read_raster(guess_skel_in)
 
     max_row = arr.shape[0]
     max_col = arr.shape[1]
@@ -153,7 +171,7 @@ def raster_to_lines(guess_skel_in):
     guess_gdf = pd.DataFrame(shapes)
     geometry = guess_gdf[0].map(shapely.wkt.loads)
     guess_gdf = guess_gdf.drop(0, axis=1)
-    guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=rast.crs, geometry=geometry)
+    guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=crs, geometry=geometry)
 
     guess_gdf["same"] = 0
     guess_gdf = guess_gdf.dissolve(by="same")
