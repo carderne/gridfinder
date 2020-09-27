@@ -40,7 +40,7 @@ def package_template(package_path: str):
 def write_to_file(content: str, path: str):
     with open(path, "w") as f:
         f.write(content)
-    os.chmod(path, 0o777)
+    os.chmod(path, 0o666)
 
 
 def make_docu(basedir=os.path.join("src", "gridfinder"), overwrite=False):

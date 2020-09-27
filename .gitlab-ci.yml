@@ -102,7 +102,7 @@ package:
         export GIT_SSH_COMMAND='ssh -i $GITLAB_DEPLOY_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=no'
 
         pip install bump2version
-        apt-get update && apt-get install -y git-lfs
+        apt-get update && apt-get -o -yq dir::cache::archives="$(pwd)/apt-cache" install git-lfs
 
         bump2version build --commit
         git push -o ci.skip origin HEAD:develop
