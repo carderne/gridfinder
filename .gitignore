@@ -3,6 +3,9 @@ server/
 test_output/
 quickrun.py
 filter.ipynb
+pylint.html
+.idea
+.pylint.d
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
