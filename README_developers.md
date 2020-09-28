@@ -89,6 +89,9 @@ PYPI_REPO_PASS
 
 They will be used in the release steps in the gitlab pipeline.
 
+You will also need to set up Gitlab CI deploy keys for 
+automatically committing from the develop pipeline during version bumping
+
 A new release requires some manual work. Here is a description of the process:
 
 1. (repeat as needed) implement features on feature branches merged into `develop`. Each merge into develop will advance the `.devNNN` version suffix and publish the pre-release version into the package registry. These versions can be installed using `pip install --pre`.
