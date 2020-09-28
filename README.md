@@ -57,3 +57,4 @@ Download or clone the repository and install the required packages (preferably i
     pip install -r requirements.txt
 
 You can run ```./test.sh``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly. (It will fail if jupyter isn't installed!)
+
