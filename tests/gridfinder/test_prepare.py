@@ -13,15 +13,15 @@ TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
 
 def _store_tif_file(fn, raster):
     with rasterio.open(
-            str(fn),
-            "w",
-            driver="GTiff",
-            height=raster.shape[0],
-            width=raster.shape[1],
-            count=1,
-            dtype=raster.dtype,
-            crs="EPSG:4326",
-            transform=TRANSFORM,
+        str(fn),
+        "w",
+        driver="GTiff",
+        height=raster.shape[0],
+        width=raster.shape[1],
+        count=1,
+        dtype=raster.dtype,
+        crs="EPSG:4326",
+        transform=TRANSFORM,
     ) as dst:
         dst.write(raster, 1)
         dst.close()
@@ -29,29 +29,23 @@ def _store_tif_file(fn, raster):
 
 
 class TestPrepare:
-
     @pytest.mark.parametrize(
         "tif_file, expected",
-         [
-              ([
-                    [[5.0, 5.0], [4.0, 4.0]],
-                    [[5.0, 5.0], [4.0, 4.0]]
-                  ], [
-                  [5.0, 5.0], [4.0, 4.0]
-              ]),
-             ([
-                 [[1.0, 1.0], [1.0, 1.0]],
-                 [[1.0, 1.0], [1.0, 1.0]]
-             ], [
-             [1.0, 1.0], [1.0, 1.0]
-         ])
-
-    ,]
-        )
+        [
+            (
+                [[[5.0, 5.0], [4.0, 4.0]], [[5.0, 5.0], [4.0, 4.0]]],
+                [[5.0, 5.0], [4.0, 4.0]],
+            ),
+            (
+                [[[1.0, 1.0], [1.0, 1.0]], [[1.0, 1.0], [1.0, 1.0]]],
+                [[1.0, 1.0], [1.0, 1.0]],
+            ),
+        ],
+    )
     def test_merge_rasters(self, tmpdir_factory, tif_file, expected):
         tmpfolder = tmpdir_factory.mktemp("tmp")
         for key, val in enumerate(tif_file):
-            fn = tmpfolder.join("tmp_"+ str(key) +".tif")
+            fn = tmpfolder.join("tmp_" + str(key) + ".tif")
             _store_tif_file(fn, np.array(val))
         merged, affine = merge_rasters(tmpfolder)
         assert_array_almost_equal(np.array(expected), merged)

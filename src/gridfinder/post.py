@@ -51,7 +51,7 @@ def _read_raster(filepath):
     return file_read, transform, crs
 
 
-def distance_to_connected_locations(dists_in, cutoff=0.0):
+def read_and_threshold_distances(dists_in, cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -79,7 +79,7 @@ def distance_to_connected_locations(dists_in, cutoff=0.0):
 
 def _threshold_array(arr, cutoff):
     """Return an array where values are 1. if smaller than cutoff,
-     and 0. otherwise"""
+    and 0. otherwise"""
     return (arr <= cutoff) * np.ones_like(arr)
 
 
