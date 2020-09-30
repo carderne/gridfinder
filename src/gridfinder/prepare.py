@@ -13,12 +13,10 @@ Functions:
 """
 
 import os
-from math import sqrt
 import json
 from pathlib import Path
 
 import numpy as np
-from scipy import signal
 
 import fiona
 import rasterio
@@ -28,7 +26,7 @@ from rasterio import Affine
 from rasterio.warp import reproject, Resampling
 
 import geopandas as gpd
-from gridfinder._util import clip_line_poly, save_raster, clip_raster
+from gridfinder._util import save_raster, clip_raster
 
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
@@ -107,30 +105,7 @@ def merge_rasters(folder, percentile=70):
     return raster_merged, affine
 
 
-def filter_func(i, j):
-    """Function used in creating raster filter."""
-
-    d_rows = abs(i - 20)
-    d_cols = abs(j - 20)
-    d = sqrt(d_rows ** 2 + d_cols ** 2)
-
-    if d == 0:
-        return 0.0
-    else:
-        return 1 / (1 + d / 2) ** 3
-
-
-def create_filter():
-    """Create and return a numpy array filter to be applied to the raster."""
-    vec_filter_func = np.vectorize(filter_func)
-    ntl_filter = np.fromfunction(vec_filter_func, (41, 41), dtype=float)
-
-    ntl_filter = ntl_filter / ntl_filter.sum()
-
-    return ntl_filter
-
-
-def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
+def prepare_ntl(ntl_in, aoi_in, filter, threshold=0.1, upsample_by=2):
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
 
@@ -140,7 +115,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
         Path to an NTL raster file.
     aoi_in : str, Path
         Path to a Fiona-readable AOI file.
-    ntl_filter : numpy array, optional (defaults to create_filter())
+    filter : numpy array
         The filter will be convolved over the raster.
     threshold : float, optional (default 0.1.)
         The threshold to apply after filtering, values above
@@ -163,20 +138,14 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
     else:
         aoi = gpd.read_file(aoi_in)
 
-    if ntl_filter is None:
-        ntl_filter = create_filter()
-
     ntl_big = rasterio.open(ntl_in)
-
     coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
     ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
 
     if ntl.ndim == 3:
         ntl = ntl[0]
 
-    ntl_convolved = signal.convolve2d(ntl, ntl_filter, mode="same")
-    ntl_filtered = ntl - ntl_convolved
-
+    ntl_filtered = filter.predict(ntl, filter)
     ntl_interp = np.empty(
         shape=(
             1,  # same number of bands
@@ -185,7 +154,17 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
         )
     )
 
-    # adjust the new affine transform to the 150% smaller cell size
+    ntl_interp, newaff = _upsample(affine, ntl_filtered, ntl_interp, upsample_by)
+    ntl_interp = ntl_interp[0]
+    ntl_thresh = np.empty_like(ntl_interp)
+    ntl_thresh[:] = ntl_interp[:]
+    ntl_thresh[ntl_thresh < threshold] = 0
+    ntl_thresh[ntl_thresh >= threshold] = 1
+
+    return ntl_thresh, newaff
+
+
+def _upsample(affine, ntl_filtered, ntl_interp, upsample_by):
     newaff = Affine(
         affine.a / upsample_by,
         affine.b,
@@ -205,15 +184,7 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
                 dst_crs={"init": "epsg:4326"},
                 resampling=Resampling.bilinear,
             )
-
-    ntl_interp = ntl_interp[0]
-
-    ntl_thresh = np.empty_like(ntl_interp)
-    ntl_thresh[:] = ntl_interp[:]
-    ntl_thresh[ntl_thresh < threshold] = 0
-    ntl_thresh[ntl_thresh >= threshold] = 1
-
-    return ntl_thresh, newaff
+    return ntl_interp, newaff
 
 
 def drop_zero_pop(targets_in, pop_in, aoi):
