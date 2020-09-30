@@ -1,0 +1,8 @@
+tox
+pytest
+jupyter
+pylint
+anybadge
+sphinx
+bump2version
+black
