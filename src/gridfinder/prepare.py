@@ -145,7 +145,7 @@ def prepare_ntl(ntl_in, aoi_in, filter, threshold=0.1, upsample_by=2):
     if ntl.ndim == 3:
         ntl = ntl[0]
 
-    ntl_filtered = filter.predict(ntl, filter)
+    ntl_filtered = filter.predict(ntl)
     ntl_interp = np.empty(
         shape=(
             1,  # same number of bands

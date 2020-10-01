@@ -1,10 +1,16 @@
 from math import sqrt
-
+import abc
 import numpy as np
 from scipy import signal
 
 
-class NightlightFilter:
+class Filter(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def predict(self, data):
+        pass
+
+
+class NightlightFilter(Filter):
     def __init__(self, shape=(41, 41)):
         """Create and return a numpy array filter to be applied to the raster."""
         vec_filter_func = np.vectorize(self._filter_func)
