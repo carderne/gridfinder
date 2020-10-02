@@ -13,6 +13,7 @@ Functions:
 """
 
 from pathlib import Path
+from typing import Union, Optional, List
 
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ from rasterio.transform import xy
 from gridfinder._util import clip_line_poly
 
 
-def _read_raster(filepath):
+def _read_raster(filepath, raster_bands: Optional[Union[int, List[int]]]):
     """
     Read a raster file and return its content and affine transformation.
 
@@ -38,20 +39,20 @@ def _read_raster(filepath):
     Returns
     -------
     file_read: numpy array
-        Representation of raster file
+        Representation of raster file, either 2D if one band or 3D if multiple
     transform: numpy array
         The affine transformation of the raster file.
     crs: rasterio.crs.CRS
         Coordinate reference system
     """
-    file = rasterio.open(filepath)
-    file_read = file.read(1)
-    transform = file.transform
-    crs = file.crs
-    return file_read, transform, crs
+    with rasterio.open(filepath) as file:
+        file_read = file.read(raster_bands)
+        transform = file.transform
+        crs = file.crs
+        return file_read, transform, crs
 
 
-def read_and_threshold_distances(dists_in, cutoff=0.0):
+def read_and_threshold_distances(dists_in: Union[np.ndarray], cutoff=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -67,7 +68,7 @@ def read_and_threshold_distances(dists_in, cutoff=0.0):
         Binary representation of input array.
     """
     if isinstance(dists_in, (str, Path)):
-        dists, _, _ = _read_raster(dists_in)
+        dists, _, _ = _read_raster(dists_in, 1)
         return _threshold_array(dists, cutoff)
 
     elif isinstance(dists_in, np.ndarray):
@@ -99,7 +100,7 @@ def thin(guess_in):
     """
 
     if isinstance(guess_in, (str, Path)):
-        guess, _, _ = _read_raster(guess_in)
+        guess, _, _ = _read_raster(guess_in, 1)
         guess_skel = skeletonize(guess)
 
     elif isinstance(guess_in, np.ndarray):
@@ -126,7 +127,7 @@ def raster_to_lines(guess_skel_in):
         Converted to geometry.
     """
 
-    arr, affine, crs = _read_raster(guess_skel_in)
+    arr, affine, crs = _read_raster(guess_skel_in, 1)
 
     max_row = arr.shape[0]
     max_col = arr.shape[1]

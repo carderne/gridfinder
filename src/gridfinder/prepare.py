@@ -105,7 +105,9 @@ def merge_rasters(folder, percentile=70):
     return raster_merged, affine
 
 
-def prepare_ntl(ntl_in, aoi_in, filter, threshold=0.1, upsample_by=2):
+def prepare_ntl(
+    ntl_in, aoi_in, electrification_predictor, threshold=0.1, upsample_by=2
+):
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
 
@@ -115,8 +117,8 @@ def prepare_ntl(ntl_in, aoi_in, filter, threshold=0.1, upsample_by=2):
         Path to an NTL raster file.
     aoi_in : str, Path
         Path to a Fiona-readable AOI file.
-    filter : numpy array
-        The filter will be convolved over the raster.
+    electrification_predictor : numpy array
+        The predictor is used to extract targets from the raster data
     threshold : float, optional (default 0.1.)
         The threshold to apply after filtering, values above
         are considered electrified.
@@ -145,7 +147,7 @@ def prepare_ntl(ntl_in, aoi_in, filter, threshold=0.1, upsample_by=2):
     if ntl.ndim == 3:
         ntl = ntl[0]
 
-    ntl_filtered = filter.predict(ntl)
+    ntl_filtered = electrification_predictor.predict(ntl)
     ntl_interp = np.empty(
         shape=(
             1,  # same number of bands
