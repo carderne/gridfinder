@@ -33,17 +33,14 @@ from gridfinder.electrificationfilter import ElectrificationFilter
 
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
-    """
-    Read continental rasters one at a time, clip to AOI and save
+    """Read continental rasters one at a time, clip to AOI and save
 
-    Parameters
-    ----------
-    folder_in : str, Path
-        Path to directory containing rasters.
-    folder_out : str, Path
-        Path to directory to save clipped rasters.
-    aoi_in : str, Path
-        Path to an AOI file (readable by Fiona) to use for clipping.
+    :param folder_in:
+    :param folder_out:
+    :param aoi_in:
+    :param debug:  (Default value = False)
+
+
     """
     if isinstance(folder_in, str):
         folder_in = Path(folder_in)
@@ -71,25 +68,17 @@ def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
 
 
 def merge_rasters(folder: Union[str, Path], percentile=70):
-    """
-    Merge a set of monthly rasters keeping the nth percentile value.
+    """Merge a set of monthly rasters keeping the nth percentile value.
 
     Used to remove transient features from time-series data.
 
-    Parameters
-    ----------
-    folder : str, Path
-        Folder containing rasters to be merged.
-    percentile : int, optional (default 70.)
-        Percentile value to use when merging using np.nanpercentile.
-        Lower values will result in lower values/brightness.
+    :param folder: Folder containing rasters to be merged.
+    :type folder: str, Path
+    :param percentile: Percentile value to use when merging using np.nanpercentile.
+        Lower values will result in lower values/brightness. (Default value = 70)
+    :type percentile: int, optional (default 70.)
 
-    Returns
-    -------
-    raster_merged : numpy array
-        The merged array.
-    affine : affine.Affine
-        The affine transformation for the merged raster.
+
     """
 
     affine = None
@@ -122,28 +111,20 @@ def prepare_ntl(
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
 
-    Parameters
-    ----------
-    ntl : np.ndarray
-        The nightlight imagery.
-    affine : gpd.GeoDataFrame
-         The affine transformation.
-    electrification_predictor : numpy array
-        The predictor is used to extract targets from the raster data
-    threshold : float, optional (default 0.1.)
-        The threshold to apply after filtering, values above
-        are considered electrified.
-    upsample_by : int, optional (default 2.)
-        The factor by which to upsample the input raster, applied to both axes
+    :param ntl: The nightlight imagery.
+    :type ntl: np.ndarray
+    :param affine: The affine transformation.
+    :type affine: gpd.GeoDataFrame
+    :param electrification_predictor: The predictor is used to extract targets from the raster data
+    :type electrification_predictor: numpy array
+    :param threshold: The threshold to apply after filtering, values above
+        are considered electrified. (Default value = 0.1)
+    :type threshold: float, optional (default 0.1.)
+    :param upsample_by: The factor by which to upsample the input raster, applied to both axes
         (so a value of 2 results in a raster 4 times bigger). This is to
-        allow the roads detail to be captured in higher resolution.
+        allow the roads detail to be captured in higher resolution. (Default value = 2)
+    :type upsample_by: int, optional (default 2.)
 
-    Returns
-    -------
-    ntl_thresh : numpy array
-        Array of cells of value 0 (not electrified) or 1 (electrified).
-    newaff : affine.Affine
-        Affine raster transformation for the returned array.
     """
     ntl_filtered = electrification_predictor.predict(ntl)
     ntl_interp = np.empty(
@@ -160,6 +141,14 @@ def prepare_ntl(
 
 
 def _upsample(affine, ntl_filtered, ntl_interp, upsample_by):
+    """
+
+    :param affine:
+    :param ntl_filtered:
+    :param ntl_interp:
+    :param upsample_by:
+
+    """
     newaff = Affine(
         affine.a / upsample_by,
         affine.b,
@@ -185,19 +174,14 @@ def _upsample(affine, ntl_filtered, ntl_interp, upsample_by):
 def drop_zero_pop(targets_in, pop_in, aoi):
     """Drop electrified cells with no other evidence of human activity.
 
-    Parameters
-    ----------
-    targets_in : str, Path
-        Path to output from prepare_ntl()
-    pop_in : str, Path
-        Path to a population raster such as GHS or HRSL.
-    aoi : str, Path or GeoDataFrame
-        An AOI to use to clip the population raster.
+    :param targets_in: Path to output from prepare_ntl()
+    :type targets_in: str, Path
+    :param pop_in: Path to a population raster such as GHS or HRSL.
+    :type pop_in: str, Path
+    :param aoi: An AOI to use to clip the population raster.
+    :type aoi: str, Path or GeoDataFrame
 
-    Returns
-    -------
-    targets : numpy array
-        Array with zero population sites dropped.
+
     """
 
     if isinstance(aoi, (str, Path)):
@@ -236,6 +220,12 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     max_j = targets.shape[1]
 
     def add_around(blob, cell):
+        """
+
+        :param blob:
+        :param cell:
+
+        """
         blob.append(cell)
         skip.append(cell)
 
@@ -278,23 +268,17 @@ def drop_zero_pop(targets_in, pop_in, aoi):
 def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     """Prepare a roads feature layer for use in algorithm.
 
-    Parameters
-    ----------
-    roads_in : str, Path
-        Path to a roads feature layer. This implementation is specific to
+    :param roads_in: Path to a roads feature layer. This implementation is specific to
         OSM data and won't assign proper weights to other data inputs.
-    aoi_in : str, Path or GeoDataFrame
-        AOI to clip roads.
-    ntl_in : str, Path
-        Path to a raster file, only used for correct shape and
+    :type roads_in: str, Path
+    :param aoi_in: AOI to clip roads.
+    :type aoi_in: str, Path or GeoDataFrame
+    :param ntl_in: Path to a raster file, only used for correct shape and
         affine of roads raster.
+    :type ntl_in: str, Path
+    :param include_power:  (Default value = True)
 
-    Returns
-    -------
-    roads_raster : numpy array
-        Roads as a raster array with the value being the cost of traversing.
-    affine : affine.Affine
-        Affine raster transformation for the new raster (same as ntl_in).
+
     """
 
     ntl_rd = rasterio.open(ntl_in)
