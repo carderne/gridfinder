@@ -8,7 +8,7 @@ import rasterio
 from affine import Affine
 from rasterio import DatasetReader
 from rasterio.mask import mask
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPolygon
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +39,11 @@ def get_clipped_data(
     dataset: DatasetReader, boundary_geodf: gpd.GeoDataFrame, nodata=0
 ) -> Tuple[np.ndarray, Affine]:
     """
+
+    :param dataset: opened raster
+    :param boundary_geodf: a GeoDataFrame with exactly one row containing the boundary.
+        Currently supported boundary types are Polygon and MultiPolygon
+    :param nodata:
     :return: Tuple containing the clipped and cropped data as numpy array and the associated affine transformation
     """
     if len(boundary_geodf) != 1:
@@ -46,16 +51,23 @@ def get_clipped_data(
             f"Expected geo data frame with exactly one row, instead got {len(boundary_geodf)}"
         )
 
-    if boundary_geodf.crs != dataset.crs:
+    dataset_crs = dataset.crs.to_string()
+    if boundary_geodf.crs is not None:
+        boundary_crs = boundary_geodf.crs.to_string()
+    else:
+        boundary_crs = None
+    if boundary_crs != dataset_crs:
         log.info(
             f"crs mismatch, projecting boundary from {boundary_geodf.crs} to {dataset.crs}"
         )
-        boundary_geodf = boundary_geodf.to_crs(dataset.crs)
+        boundary_geodf = boundary_geodf.to_crs(dataset_crs)
 
-    boundary_area = boundary_geodf.geometry[0]
-    if not isinstance(boundary_area, Polygon):
-        raise ValueError(
-            f"Expected geometry to be a Polygon, instead got {boundary_area.__class__}"
-        )
+    boundary_shape = boundary_geodf.geometry[0]
+    if not isinstance(boundary_shape, Polygon) and not isinstance(
+        boundary_shape, MultiPolygon
+    ):
+        raise ValueError(f"Unsupported geometry: {boundary_shape.__class__}")
+    # often the boundary will be a multipolygon, e.g. for a country. In such cases, we take the hull as boundary shape
+    boundary_shape = boundary_shape.convex_hull
 
-    return mask(dataset=dataset, shapes=boundary_area, crop=True, nodata=nodata)
+    return mask(dataset=dataset, shapes=[boundary_shape], crop=True, nodata=nodata)
