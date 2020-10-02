@@ -5,7 +5,7 @@ import numpy as np
 
 
 @pytest.mark.parametrize(
-    "raster, cutoff, expected",
+    "raster, threshold, expected",
     [
         (
             [[[5.0, 5.0], [4.0, 4.0]], [[5.0, 5.0], [4.0, 4.0]]],
@@ -15,7 +15,7 @@ import numpy as np
         ([2.0], 3.0, [1.0]),
     ],
 )
-def test_read_and_threshold_distances(raster, cutoff, expected):
+def test_read_and_threshold_distances(raster, threshold, expected):
     assert_array_equal(
-        read_and_threshold_distances(np.array(raster), cutoff), np.array(expected)
+        read_and_threshold_distances(np.array(raster), threshold), np.array(expected)
     )

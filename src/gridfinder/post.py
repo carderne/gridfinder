@@ -52,14 +52,14 @@ def _read_raster(filepath, raster_bands: Optional[Union[int, List[int]]]):
         return file_read, transform, crs
 
 
-def read_and_threshold_distances(dists_in: Union[np.ndarray], cutoff=0.0):
+def read_and_threshold_distances(dists_in: Union[str, np.ndarray], threshold=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
     ----------
     dists_in : path-like or numpy array
         2D array output from gridfinder algorithm.
-    cutoff : float, optional (default 0.5.)
+    threshold : float, optional (default 0.5.)
         Cutoff value below which consider the cells to be grid.
 
     Returns
@@ -69,19 +69,19 @@ def read_and_threshold_distances(dists_in: Union[np.ndarray], cutoff=0.0):
     """
     if isinstance(dists_in, (str, Path)):
         dists, _, _ = _read_raster(dists_in, 1)
-        return _threshold_array(dists, cutoff)
+        return _threshold_array(dists, threshold)
 
     elif isinstance(dists_in, np.ndarray):
-        return _threshold_array(dists_in, cutoff)
+        return _threshold_array(dists_in, threshold)
 
     else:
         raise ValueError("Please provide either a file path or a numpy.ndarray.")
 
 
-def _threshold_array(arr, cutoff):
-    """Return an array where values are 1. if smaller than cutoff,
+def _threshold_array(arr, threshold):
+    """Return an array where values are 1. if smaller than threshold,
     and 0. otherwise"""
-    return (arr <= cutoff) * np.ones_like(arr)
+    return (arr <= threshold).astype(float)
 
 
 def thin(guess_in):
