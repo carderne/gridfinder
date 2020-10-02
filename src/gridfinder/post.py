@@ -78,19 +78,19 @@ def read_and_threshold_distances(dists_in: Union[str, np.ndarray], threshold=0.0
         raise ValueError("Please provide either a file path or a numpy.ndarray.")
 
 
-def _threshold_array(arr, threshold):
+def _threshold_array(arr, threshold: float):
     """Return an array where values are 1. if smaller than threshold,
     and 0. otherwise"""
     return (arr <= threshold).astype(float)
 
 
-def thin(guess_in):
+def thin(guess_in: np.ndarray):
     """
     Use scikit-image skeletonize to 'thin' the guess raster.
 
     Parameters
     ----------
-    guess_in : path-like or 2D array
+    guess_in : 2D array
         Output from threshold().
 
     Returns
@@ -98,17 +98,7 @@ def thin(guess_in):
     guess_skel : numpy array
         Thinned version.
     """
-
-    if isinstance(guess_in, (str, Path)):
-        guess, _, _ = _read_raster(guess_in, 1)
-        guess_skel = skeletonize(guess)
-
-    elif isinstance(guess_in, np.ndarray):
-        guess_skel = skeletonize(guess_in)
-
-    else:
-        raise ValueError("Please provide either a file path or a numpy.ndarray.")
-
+    guess_skel = skeletonize(guess_in)
     return guess_skel.astype("int32")
 
 
