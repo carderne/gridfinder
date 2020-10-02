@@ -15,6 +15,7 @@ Functions:
 import os
 import json
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 
@@ -28,9 +29,12 @@ from rasterio.warp import reproject, Resampling
 import geopandas as gpd
 from gridfinder._util import save_raster, clip_raster
 
+from gridfinder.electrificationfilter import ElectrificationFilter
+
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
-    """Read continental rasters one at a time, clip to AOI and save
+    """
+    Read continental rasters one at a time, clip to AOI and save
 
     Parameters
     ----------
@@ -66,8 +70,9 @@ def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
             save_raster(folder_out / file_path, ntl, affine)
 
 
-def merge_rasters(folder, percentile=70):
-    """Merge a set of monthly rasters keeping the nth percentile value.
+def merge_rasters(folder: Union[str, Path], percentile=70):
+    """
+    Merge a set of monthly rasters keeping the nth percentile value.
 
     Used to remove transient features from time-series data.
 
@@ -88,35 +93,41 @@ def merge_rasters(folder, percentile=70):
     """
 
     affine = None
+    crs = None
     rasters = []
 
     for file in os.listdir(folder):
         if file.endswith(".tif"):
-            ntl_rd = rasterio.open(os.path.join(folder, file))
-            rasters.append(ntl_rd.read(1))
+            with rasterio.open(os.path.join(folder, file)) as ntl_rd:
+                rasters.append(ntl_rd.read(1))
 
-            if not affine:
-                affine = ntl_rd.transform
-
+                if not affine:
+                    affine = ntl_rd.transform
+                if not crs:
+                    crs = ntl_rd.crs
     raster_arr = np.array(rasters)
 
     raster_merged = np.percentile(raster_arr, percentile, axis=0)
 
-    return raster_merged, affine
+    return raster_merged, affine, crs
 
 
 def prepare_ntl(
-    ntl_in, aoi_in, electrification_predictor, threshold=0.1, upsample_by=2
+    ntl: np.ndarray,
+    affine: gpd.GeoDataFrame,
+    electrification_predictor: ElectrificationFilter,
+    threshold=0.1,
+    upsample_by=2,
 ):
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
 
     Parameters
     ----------
-    ntl_in : str, Path
-        Path to an NTL raster file.
-    aoi_in : str, Path
-        Path to a Fiona-readable AOI file.
+    ntl : np.ndarray
+        The nightlight imagery.
+    affine : gpd.GeoDataFrame
+         The affine transformation.
     electrification_predictor : numpy array
         The predictor is used to extract targets from the raster data
     threshold : float, optional (default 0.1.)
@@ -134,26 +145,9 @@ def prepare_ntl(
     newaff : affine.Affine
         Affine raster transformation for the returned array.
     """
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
-
-    ntl_big = rasterio.open(ntl_in)
-    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
-    ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
-
-    if ntl.ndim == 3:
-        ntl = ntl[0]
-
     ntl_filtered = electrification_predictor.predict(ntl)
     ntl_interp = np.empty(
-        shape=(
-            1,  # same number of bands
-            round(ntl.shape[0] * upsample_by),
-            round(ntl.shape[1] * upsample_by),
-        )
+        shape=(1, round(ntl.shape[0] * upsample_by), round(ntl.shape[1] * upsample_by))
     )
 
     ntl_interp, newaff = _upsample(affine, ntl_filtered, ntl_interp, upsample_by)

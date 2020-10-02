@@ -1,6 +1,6 @@
 import pytest
 from numpy.testing import assert_array_equal
-from gridfinder.post import read_and_threshold_distances
+from gridfinder.post import threshold_distances
 import numpy as np
 
 
@@ -15,7 +15,7 @@ import numpy as np
         ([2.0], 3.0, [1.0]),
     ],
 )
-def test_read_and_threshold_distances(raster, threshold, expected):
+def test_threshold_distances(raster, threshold, expected):
     assert_array_equal(
-        read_and_threshold_distances(np.array(raster), threshold), np.array(expected)
+        threshold_distances(np.array(raster), threshold), np.array(expected)
     )

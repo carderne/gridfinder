@@ -28,7 +28,9 @@ from rasterio.transform import xy
 from gridfinder._util import clip_line_poly
 
 
-def _read_raster(filepath, raster_bands: Optional[Union[int, List[int]]]):
+def _read_raster(
+    filepath: Union[str, Path], raster_bands: Optional[Union[int, List[int]]]
+):
     """
     Read a raster file and return its content and affine transformation.
 
@@ -52,12 +54,12 @@ def _read_raster(filepath, raster_bands: Optional[Union[int, List[int]]]):
         return file_read, transform, crs
 
 
-def read_and_threshold_distances(dists_in: Union[str, np.ndarray], threshold=0.0):
+def threshold_distances(dists_in: np.ndarray, threshold=0.0):
     """Convert distance array into binary array of connected locations.
 
     Parameters
     ----------
-    dists_in : path-like or numpy array
+    dists_in : numpy array
         2D array output from gridfinder algorithm.
     threshold : float, optional (default 0.5.)
         Cutoff value below which consider the cells to be grid.
@@ -67,21 +69,7 @@ def read_and_threshold_distances(dists_in: Union[str, np.ndarray], threshold=0.0
     guess : numpy array
         Binary representation of input array.
     """
-    if isinstance(dists_in, (str, Path)):
-        dists, _, _ = _read_raster(dists_in, 1)
-        return _threshold_array(dists, threshold)
-
-    elif isinstance(dists_in, np.ndarray):
-        return _threshold_array(dists_in, threshold)
-
-    else:
-        raise ValueError("Please provide either a file path or a numpy.ndarray.")
-
-
-def _threshold_array(arr, threshold: float):
-    """Return an array where values are 1. if smaller than threshold,
-    and 0. otherwise"""
-    return (arr <= threshold).astype(float)
+    return (dists_in <= threshold).astype(float)
 
 
 def thin(guess_in: np.ndarray):
@@ -102,23 +90,22 @@ def thin(guess_in: np.ndarray):
     return guess_skel.astype("int32")
 
 
-def raster_to_lines(guess_skel_in):
+def raster_to_lines(arr: np.ndarray, affine, crs):
     """
     Convert thinned raster to linestring geometry.
 
     Parameters
     ----------
-    guess_skel_in : path-like
+    arr : np.ndarray
         Output from thin().
+    affine: Affine transformation.
+    crs: Coordinate reference system
 
     Returns
     -------
     guess_gdf : GeoDataFrame
         Converted to geometry.
     """
-
-    arr, affine, crs = _read_raster(guess_skel_in, 1)
-
     max_row = arr.shape[0]
     max_col = arr.shape[1]
     lines = []
@@ -171,28 +158,26 @@ def raster_to_lines(guess_skel_in):
     return guess_gdf
 
 
-def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
+def accuracy(
+    grid: gpd.GeoDataFrame,
+    guess_in: Union[str, Path],
+    aoi: np.ndarray,
+    buffer_amount=0.01,
+):
     """Measure accuracy against a specified grid 'truth' file.
 
     Parameters
     ----------
-    grid_in : str, Path
+    grid : gpd.GeoDataFrame
         Path to vector truth file.
     guess_in : str, Path
         Path to guess output from guess2geom.
-    aoi_in : str, Path
-        Path to AOI feature.
+    aoi : gpd.GeoDataFrame
+        The area of interest.
     buffer_amount : float, optional (default 0.01.)
         Leeway in decimal degrees in calculating equivalence.
         0.01 DD equals approximately 1 mile at the equator.
     """
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
-
-    grid = gpd.read_file(grid_in)
     grid_clipped = clip_line_poly(grid, aoi)
     grid_buff = grid_clipped.buffer(buffer_amount)
 

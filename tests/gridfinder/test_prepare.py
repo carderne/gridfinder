@@ -47,6 +47,6 @@ class TestPrepare:
         for key, val in enumerate(tif_file):
             fn = tmpfolder.join("tmp_" + str(key) + ".tif")
             _store_tif_file(fn, np.array(val))
-        merged, affine = merge_rasters(tmpfolder)
+        merged, affine, crs = merge_rasters(tmpfolder)
         assert_array_almost_equal(np.array(expected), merged)
         assert TRANSFORM == affine
