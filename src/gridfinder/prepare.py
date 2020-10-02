@@ -154,8 +154,7 @@ def prepare_ntl(
     ntl_interp = ntl_interp[0]
     ntl_thresh = np.empty_like(ntl_interp)
     ntl_thresh[:] = ntl_interp[:]
-    ntl_thresh[ntl_thresh < threshold] = 0
-    ntl_thresh[ntl_thresh >= threshold] = 1
+    ntl_thresh = (ntl_thresh >= threshold).astype(float)
 
     return ntl_thresh, newaff
 

@@ -56,6 +56,7 @@ def _read_raster(
 
 def threshold_distances(dists_in: np.ndarray, threshold=0.0):
     """Convert distance array into binary array of connected locations.
+    Value is 1 if lower or equal the threshold, and 0 otherwise.
 
     Parameters
     ----------
