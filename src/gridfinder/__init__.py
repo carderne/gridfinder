@@ -8,8 +8,3 @@ gridfinder package contains the following modules:
 """
 
 __version__ = "1.1.1"
-
-from .prepare import *
-from .gridfinder import *
-from .post import *
-from ._util import *
