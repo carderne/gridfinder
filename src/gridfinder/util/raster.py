@@ -14,8 +14,11 @@ log = logging.getLogger(__name__)
 
 
 def save_2d_array_as_raster(
-    path: str, arr: np.ndarray, transform: Affine, crs=None, nodata=0
+    path: str, arr: np.ndarray, transform: Affine, crs, nodata=0
 ):
+    if not len(arr.shape) == 2:
+        log.debug(f"Wrong shape {arr.shape}, trying to strip empty dimensions")
+        arr = arr.squeeze()
     if not len(arr.shape) == 2:
         raise ValueError(f"Expected 2-dim array, instead got shape: {arr.shape}")
     log.debug(f"Saving raster to {path}")
