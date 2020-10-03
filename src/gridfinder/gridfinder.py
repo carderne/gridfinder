@@ -9,16 +9,17 @@ Functions:
 """
 
 import os
-import sys
-from math import sqrt
-from heapq import heapify, heappush, heappop
 import pickle
+import sys
+from heapq import heapify, heappush, heappop
+from math import sqrt
 
 import numpy as np
 import rasterio
 from IPython.display import display, Markdown
 
-from gridfinder._util import save_raster
+from gridfinder.constants import CRS
+from gridfinder.util.raster import save_2d_array_as_raster
 
 sys.setrecursionlimit(100000)
 
@@ -224,6 +225,6 @@ def optimise(
                             if animate:
                                 i = int(progress)
                                 path = os.path.join(animate_path, f"arr{i:03d}.tif")
-                                save_raster(path, dist, affine)
+                                save_2d_array_as_raster(path, dist, affine, CRS)
 
     return dist

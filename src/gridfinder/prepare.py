@@ -12,23 +12,22 @@ Functions:
 - prepare_roads
 """
 
+import json
 import os
 from math import sqrt
-import json
 from pathlib import Path
 
+import fiona
+import geopandas as gpd
 import numpy as np
+import rasterio
+from rasterio import Affine
+from rasterio.features import rasterize
+from rasterio.mask import mask
+from rasterio.warp import reproject, Resampling
 from scipy import signal
 
-import fiona
-import rasterio
-from rasterio.mask import mask
-from rasterio.features import rasterize
-from rasterio import Affine
-from rasterio.warp import reproject, Resampling
-
-import geopandas as gpd
-from gridfinder._util import clip_line_poly, save_raster, clip_raster
+from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
 
 
 def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
@@ -65,7 +64,7 @@ def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
             if ntl.ndim == 3:
                 ntl = ntl[0]
 
-            save_raster(folder_out / file_path, ntl, affine)
+            save_2d_array_as_raster(folder_out / file_path, ntl, affine)
 
 
 def merge_rasters(folder, percentile=70):
@@ -238,7 +237,9 @@ def drop_zero_pop(targets_in, pop_in, aoi):
         aoi = gpd.read_file(aoi)
 
     # Clip population layer to AOI
-    clipped, affine, crs = clip_raster(pop_in, aoi)
+    with rasterio.open(pop_in) as dataset:
+        crs = dataset.crs
+        clipped, affine = get_clipped_data(dataset, aoi)
     # clipped = clipped[0]  # no longer needed, fixed in clip_raster
 
     # We need to warp the population layer to exactly overlap with targets
