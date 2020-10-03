@@ -15,10 +15,7 @@ def open_file_in_tar(
     path: str, file_name: str = None, file_index: int = None
 ) -> BufferedReader:
     """
-    Opens an archived file in memory without extracting it on disc. To use as
-
-    >>> with open_file_in_tar(...) as file:
-    >>>     do_something(file)
+    Opens an archived file in memory without extracting it on disc.
 
     :param path:
     :param file_name:
