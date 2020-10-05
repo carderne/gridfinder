@@ -27,44 +27,7 @@ from rasterio.mask import mask
 from rasterio.warp import reproject, Resampling
 from scipy import signal
 
-from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
-
-
-def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
-    """Read continental rasters one at a time, clip to AOI and save
-
-    Parameters
-    ----------
-    folder_in : str, Path
-        Path to directory containing rasters.
-    folder_out : str, Path
-        Path to directory to save clipped rasters.
-    aoi_in : str, Path
-        Path to an AOI file (readable by Fiona) to use for clipping.
-    """
-    if isinstance(folder_in, str):
-        folder_in = Path(folder_in)
-    if isinstance(folder_out, str):
-        folder_out = Path(folder_out)
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
-
-    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
-
-    for file_path in os.listdir(folder_in):
-        if file_path.endswith(".tif"):
-            if debug:
-                print(f"Doing {file_path}")
-            ntl_rd = rasterio.open(os.path.join(folder_in, file_path))
-            ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
-
-            if ntl.ndim == 3:
-                ntl = ntl[0]
-
-            save_2d_array_as_raster(folder_out / file_path, ntl, affine)
+from gridfinder.util.raster import get_clipped_data
 
 
 def merge_rasters(folder, percentile=70):
