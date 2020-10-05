@@ -109,7 +109,8 @@ def prepare_ntl(
     upsample_by=2,
 ):
     """Convert the supplied NTL raster and output an array of electrified cells
-    as targets for the algorithm.
+    as targets for the algorithm by applying an electrification predictor over it,
+    upsample the result, and convert to binary values by applying threshold.
 
     :param ntl: The nightlight imagery.
     :type ntl: np.ndarray
@@ -127,28 +128,30 @@ def prepare_ntl(
 
     """
     ntl_filtered = electrification_predictor.predict(ntl)
-    ntl_interp = np.empty(
-        shape=(1, round(ntl.shape[0] * upsample_by), round(ntl.shape[1] * upsample_by))
-    )
-
-    ntl_interp, newaff = _upsample(affine, ntl_filtered, ntl_interp, upsample_by)
-    ntl_interp = ntl_interp[0]
-    ntl_thresh = np.empty_like(ntl_interp)
-    ntl_thresh[:] = ntl_interp[:]
-    ntl_thresh = (ntl_thresh >= threshold).astype(float)
-
+    ntl_interp, newaff = _upsample(affine, ntl_filtered, upsample_by)
+    ntl_thresh = (ntl_interp[0] >= threshold).astype(float)
     return ntl_thresh, newaff
 
 
-def _upsample(affine, ntl_filtered, ntl_interp, upsample_by):
+def _upsample(affine: gpd.GeoDataFrame, ntl_filtered: np.ndarray, upsample_by: int):
     """
-
-    :param affine:
-    :param ntl_filtered:
-    :param ntl_interp:
-    :param upsample_by:
+    Upsample the input raster and return upsampled raster and new affine transformation.
+    :param affine: The input affine transformation.
+    :type affine: gpd.GeoDataFrame
+    :param ntl_filtered: Input raster.
+    :type ntl_filtered: np.ndarray
+    :param upsample_by: Factor to be applied to both axes,
+        e.g. 2 will make the raster 4 times bigger.
+    :type upsample_by: int
 
     """
+    ntl_interp = np.empty(
+        shape=(
+            1,
+            round(ntl_filtered.shape[0] * upsample_by),
+            round(ntl_filtered.shape[1] * upsample_by),
+        )
+    )
     newaff = Affine(
         affine.a / upsample_by,
         affine.b,
