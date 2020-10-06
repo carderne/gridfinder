@@ -12,12 +12,10 @@ Functions:
 - prepare_roads
 """
 
-import json
 import os
 from pathlib import Path
 from typing import Union
 
-import numpy as np
 
 import fiona
 import geopandas as gpd
