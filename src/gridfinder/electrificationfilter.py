@@ -20,20 +20,20 @@ class NightlightFilter(ElectrificationFilter):
 
     def __init__(self, shape=(41, 41)):
         """
-        :param shape: Shape of filter, e.g. (2,2)
+        :param shape: Shape of predictor, e.g. (2,2)
         """
         self.shape = shape
-        self.filter = self._func_to_filter()
+        self.predictor = self._func_to_filter()
 
     def _filter_func(self, i: int, j: int):
         """
         d is that pixel’s perpendicular distance from a given square sample’s centroid.
-        The goal of this filter is to find pixels with a higher value than their neighborhood,
+        The goal of this predictor is to find pixels with a higher value than their neighborhood,
         biased towards closer areas. To achieve this bias, a non-linear function is needed,
         and a cubic function was found to achieve better results than a square function.
 
-        :param i: row number with respect to filter height
-        :param j: column number with respect to filter width
+        :param i: row number with respect to predictor height
+        :param j: column number with respect to predictor width
         :return: Value
         """
         d_rows = abs(i - math.floor(self.shape[0] / 2))
@@ -47,9 +47,9 @@ class NightlightFilter(ElectrificationFilter):
 
     def _func_to_filter(self):
         """
-        Construct a filter from the pixel-wise function.
-        The filter is normalized so that and the output is then subtracted from the original image.
-        :return: Numpy array with filter values
+        Construct a predictor from the pixel-wise function.
+        The predictor is normalized so that and the output is then subtracted from the original image.
+        :return: Numpy array with predictor values
         """
         vec_filter_func = np.vectorize(self._filter_func)
         ntl_filter = np.fromfunction(vec_filter_func, self.shape, dtype=float)
@@ -57,10 +57,10 @@ class NightlightFilter(ElectrificationFilter):
 
     def predict(self, data: np.ndarray):
         """
-        Apply filter on input data.
+        Apply predictor on input data.
         :param data:
         :return:
         """
-        ntl_convolved = signal.convolve2d(data, self.filter, mode="same")
+        ntl_convolved = signal.convolve2d(data, self.predictor, mode="same")
         ntl_filtered = data - ntl_convolved
         return ntl_filtered

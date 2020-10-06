@@ -7,10 +7,4 @@ gridfinder package contains the following modules:
  - _util.py : helper functions used internally
 """
 
-__version__ = "1.1.1"
-
-from .prepare import *
-from .gridfinder import *
-from .post import *
-from ._util import *
-from .electrificationfilter import *
+__version__ = "1.2.0-dev2"

@@ -13,58 +13,20 @@ Functions:
 """
 
 import os
-import json
 from pathlib import Path
 from typing import Union
 
 import numpy as np
 
 import fiona
-import rasterio
-from rasterio.mask import mask
-from rasterio.features import rasterize
-from rasterio import Affine
-from rasterio.warp import reproject, Resampling
-
 import geopandas as gpd
-from gridfinder._util import save_raster, clip_raster
-
+import numpy as np
+import rasterio
+from rasterio import Affine
+from rasterio.features import rasterize
+from rasterio.warp import reproject, Resampling
+from gridfinder.util.raster import get_clipped_data
 from gridfinder.electrificationfilter import ElectrificationFilter
-
-
-def clip_rasters(folder_in, folder_out, aoi_in, debug=False):
-    """Read continental rasters one at a time, clip to AOI and save
-
-    :param folder_in:
-    :param folder_out:
-    :param aoi_in:
-    :param debug:  (Default value = False)
-
-
-    """
-    if isinstance(folder_in, str):
-        folder_in = Path(folder_in)
-    if isinstance(folder_out, str):
-        folder_out = Path(folder_out)
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
-
-    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
-
-    for file_path in os.listdir(folder_in):
-        if file_path.endswith(".tif"):
-            if debug:
-                print(f"Doing {file_path}")
-            ntl_rd = rasterio.open(os.path.join(folder_in, file_path))
-            ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
-
-            if ntl.ndim == 3:
-                ntl = ntl[0]
-
-            save_raster(folder_out / file_path, ntl, affine)
 
 
 def merge_rasters(folder: Union[str, Path], percentile=70):
@@ -191,7 +153,9 @@ def drop_zero_pop(targets_in, pop_in, aoi):
         aoi = gpd.read_file(aoi)
 
     # Clip population layer to AOI
-    clipped, affine, crs = clip_raster(pop_in, aoi)
+    with rasterio.open(pop_in) as dataset:
+        crs = dataset.crs
+        clipped, affine = get_clipped_data(dataset, aoi)
     # clipped = clipped[0]  # no longer needed, fixed in clip_raster
 
     # We need to warp the population layer to exactly overlap with targets
