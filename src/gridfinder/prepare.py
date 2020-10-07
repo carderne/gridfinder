@@ -12,10 +12,10 @@ Functions:
 - prepare_roads
 """
 
-import json
 import os
-from math import sqrt
 from pathlib import Path
+from typing import Union
+
 
 import fiona
 import geopandas as gpd
@@ -23,131 +23,96 @@ import numpy as np
 import rasterio
 from rasterio import Affine
 from rasterio.features import rasterize
-from rasterio.mask import mask
 from rasterio.warp import reproject, Resampling
-from scipy import signal
-
 from gridfinder.util.raster import get_clipped_data
+from gridfinder.electrificationfilter import ElectrificationFilter
 
 
-def merge_rasters(folder, percentile=70):
+def merge_rasters(folder: Union[str, Path], percentile=70):
     """Merge a set of monthly rasters keeping the nth percentile value.
 
     Used to remove transient features from time-series data.
 
-    Parameters
-    ----------
-    folder : str, Path
-        Folder containing rasters to be merged.
-    percentile : int, optional (default 70.)
-        Percentile value to use when merging using np.nanpercentile.
-        Lower values will result in lower values/brightness.
+    :param folder: Folder containing rasters to be merged.
+    :type folder: str, Path
+    :param percentile: Percentile value to use when merging using np.nanpercentile.
+        Lower values will result in lower values/brightness. (Default value = 70)
+    :type percentile: int, optional (default 70.)
 
-    Returns
-    -------
-    raster_merged : numpy array
-        The merged array.
-    affine : affine.Affine
-        The affine transformation for the merged raster.
+
     """
 
     affine = None
+    crs = None
     rasters = []
 
     for file in os.listdir(folder):
         if file.endswith(".tif"):
-            ntl_rd = rasterio.open(os.path.join(folder, file))
-            rasters.append(ntl_rd.read(1))
+            with rasterio.open(os.path.join(folder, file)) as ntl_rd:
+                rasters.append(ntl_rd.read(1))
 
-            if not affine:
-                affine = ntl_rd.transform
-
+                if not affine:
+                    affine = ntl_rd.transform
+                if not crs:
+                    crs = ntl_rd.crs
     raster_arr = np.array(rasters)
 
     raster_merged = np.percentile(raster_arr, percentile, axis=0)
 
-    return raster_merged, affine
+    return raster_merged, affine, crs
 
 
-def filter_func(i, j):
-    """Function used in creating raster filter."""
-
-    d_rows = abs(i - 20)
-    d_cols = abs(j - 20)
-    d = sqrt(d_rows ** 2 + d_cols ** 2)
-
-    if d == 0:
-        return 0.0
-    else:
-        return 1 / (1 + d / 2) ** 3
-
-
-def create_filter():
-    """Create and return a numpy array filter to be applied to the raster."""
-    vec_filter_func = np.vectorize(filter_func)
-    ntl_filter = np.fromfunction(vec_filter_func, (41, 41), dtype=float)
-
-    ntl_filter = ntl_filter / ntl_filter.sum()
-
-    return ntl_filter
-
-
-def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
+def prepare_ntl(
+    ntl: np.ndarray,
+    affine: gpd.GeoDataFrame,
+    electrification_predictor: ElectrificationFilter,
+    threshold=0.1,
+    upsample_by=2,
+):
     """Convert the supplied NTL raster and output an array of electrified cells
-    as targets for the algorithm.
+    as targets for the algorithm by applying an electrification predictor over it,
+    upsample the result, and convert to binary values by applying threshold.
 
-    Parameters
-    ----------
-    ntl_in : str, Path
-        Path to an NTL raster file.
-    aoi_in : str, Path
-        Path to a Fiona-readable AOI file.
-    ntl_filter : numpy array, optional (defaults to create_filter())
-        The filter will be convolved over the raster.
-    threshold : float, optional (default 0.1.)
-        The threshold to apply after filtering, values above
-        are considered electrified.
-    upsample_by : int, optional (default 2.)
-        The factor by which to upsample the input raster, applied to both axes
+    :param ntl: The nightlight imagery.
+    :type ntl: np.ndarray
+    :param affine: The affine transformation.
+    :type affine: gpd.GeoDataFrame
+    :param electrification_predictor: The predictor is used to extract targets from the raster data
+    :type electrification_predictor: numpy array
+    :param threshold: The threshold to apply after filtering, values above
+        are considered electrified. (Default value = 0.1)
+    :type threshold: float, optional (default 0.1.)
+    :param upsample_by: The factor by which to upsample the input raster, applied to both axes
         (so a value of 2 results in a raster 4 times bigger). This is to
-        allow the roads detail to be captured in higher resolution.
+        allow the roads detail to be captured in higher resolution. (Default value = 2)
+    :type upsample_by: int, optional (default 2.)
 
-    Returns
-    -------
-    ntl_thresh : numpy array
-        Array of cells of value 0 (not electrified) or 1 (electrified).
-    newaff : affine.Affine
-        Affine raster transformation for the returned array.
     """
+    ntl_filtered = electrification_predictor.predict(ntl)
+    ntl_interp, newaff = _upsample(affine, ntl_filtered, upsample_by)
+    ntl_thresh = (ntl_interp[0] >= threshold).astype(float)
+    return ntl_thresh, newaff
 
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
 
-    if ntl_filter is None:
-        ntl_filter = create_filter()
+def _upsample(affine: gpd.GeoDataFrame, ntl_filtered: np.ndarray, upsample_by: int):
+    """
+    Upsample the input raster and return upsampled raster and new affine transformation.
+    :param affine: The input affine transformation.
+    :type affine: gpd.GeoDataFrame
+    :param ntl_filtered: Input raster.
+    :type ntl_filtered: np.ndarray
+    :param upsample_by: Factor to be applied to both axes,
+        e.g. 2 will make the raster 4 times bigger.
+    :type upsample_by: int
 
-    ntl_big = rasterio.open(ntl_in)
-
-    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
-    ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
-
-    if ntl.ndim == 3:
-        ntl = ntl[0]
-
-    ntl_convolved = signal.convolve2d(ntl, ntl_filter, mode="same")
-    ntl_filtered = ntl - ntl_convolved
-
+    """
     ntl_interp = np.empty(
         shape=(
-            1,  # same number of bands
-            round(ntl.shape[0] * upsample_by),
-            round(ntl.shape[1] * upsample_by),
+            1,
+            round(ntl_filtered.shape[0] * upsample_by),
+            round(ntl_filtered.shape[1] * upsample_by),
         )
     )
-
-    # adjust the new affine transform to the 150% smaller cell size
     newaff = Affine(
         affine.a / upsample_by,
         affine.b,
@@ -167,33 +132,20 @@ def prepare_ntl(ntl_in, aoi_in, ntl_filter=None, threshold=0.1, upsample_by=2):
                 dst_crs={"init": "epsg:4326"},
                 resampling=Resampling.bilinear,
             )
-
-    ntl_interp = ntl_interp[0]
-
-    ntl_thresh = np.empty_like(ntl_interp)
-    ntl_thresh[:] = ntl_interp[:]
-    ntl_thresh[ntl_thresh < threshold] = 0
-    ntl_thresh[ntl_thresh >= threshold] = 1
-
-    return ntl_thresh, newaff
+    return ntl_interp, newaff
 
 
 def drop_zero_pop(targets_in, pop_in, aoi):
     """Drop electrified cells with no other evidence of human activity.
 
-    Parameters
-    ----------
-    targets_in : str, Path
-        Path to output from prepare_ntl()
-    pop_in : str, Path
-        Path to a population raster such as GHS or HRSL.
-    aoi : str, Path or GeoDataFrame
-        An AOI to use to clip the population raster.
+    :param targets_in: Path to output from prepare_ntl()
+    :type targets_in: str, Path
+    :param pop_in: Path to a population raster such as GHS or HRSL.
+    :type pop_in: str, Path
+    :param aoi: An AOI to use to clip the population raster.
+    :type aoi: str, Path or GeoDataFrame
 
-    Returns
-    -------
-    targets : numpy array
-        Array with zero population sites dropped.
+
     """
 
     if isinstance(aoi, (str, Path)):
@@ -234,6 +186,12 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     max_j = targets.shape[1]
 
     def add_around(blob, cell):
+        """
+
+        :param blob:
+        :param cell:
+
+        """
         blob.append(cell)
         skip.append(cell)
 
@@ -276,23 +234,17 @@ def drop_zero_pop(targets_in, pop_in, aoi):
 def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     """Prepare a roads feature layer for use in algorithm.
 
-    Parameters
-    ----------
-    roads_in : str, Path
-        Path to a roads feature layer. This implementation is specific to
+    :param roads_in: Path to a roads feature layer. This implementation is specific to
         OSM data and won't assign proper weights to other data inputs.
-    aoi_in : str, Path or GeoDataFrame
-        AOI to clip roads.
-    ntl_in : str, Path
-        Path to a raster file, only used for correct shape and
+    :type roads_in: str, Path
+    :param aoi_in: AOI to clip roads.
+    :type aoi_in: str, Path or GeoDataFrame
+    :param ntl_in: Path to a raster file, only used for correct shape and
         affine of roads raster.
+    :type ntl_in: str, Path
+    :param include_power:  (Default value = True)
 
-    Returns
-    -------
-    roads_raster : numpy array
-        Roads as a raster array with the value being the cost of traversing.
-    affine : affine.Affine
-        Affine raster transformation for the new raster (same as ntl_in).
+
     """
 
     ntl_rd = rasterio.open(ntl_in)
