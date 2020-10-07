@@ -7,7 +7,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     include_package_data=True,
-    version="1.2.0-dev2",
+    version="1.2.0-dev3",
     description="Library for finding gridlines from nightlight imagery",
     install_requires=open("requirements.txt").readlines(),
     setup_requires=["wheel"],
