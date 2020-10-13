@@ -13,9 +13,7 @@ resources = {"metadata": {"path": NOTEBOOKS_DIR}}
 log = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "notebook", [file for file in os.listdir(NOTEBOOKS_DIR) if file.endswith(".ipynb")]
-)
+@pytest.mark.parametrize("notebook", ["example.ipynb", "example_simple.ipynb"])
 def test_notebook(notebook):
     notebook_path = os.path.join(NOTEBOOKS_DIR, notebook)
     log.info(f"Reading jupyter notebook from {notebook_path}")
