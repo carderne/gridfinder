@@ -33,6 +33,8 @@ from gridfinder.electrificationfilter import NightlightFilter
 from config import get_config
 from data_access.remote_storage import RemoteStorage, RemoteStorageConfig
 
+from trains import Task, backend_api
+
 
 c = get_config(reload=True)
 remote_storage = RemoteStorage(c.remote_storage)
@@ -100,13 +102,29 @@ params = {
     "cutoff": cutoff,
 }
 
-from trains import Task
+
+cfg = backend_api.load_config().to_dict()
+if not cfg["api"]["api_server"]:
+    raise RuntimeError(
+        "Prevented Trains experiment upload to AllegroAI demo server. Did you run 'trains init'?"
+    )
+if (
+    not cfg["sdk"]["google"]["storage"]["credentials_json"]
+    and not cfg["sdk"]["google"]["storage"]["credentials"]
+):
+    raise RuntimeError(
+        "Prevented Trains artifacts upload to Google Cloud Storage. Did you add GCS credentials to your "
+        "~/trains.conf?"
+    )
+
 
 task = Task.init(
     project_name="Gridfinder",
     task_name="Nigeria Gridfinder run_gridfinder.py",
     reuse_last_task_id=False,
+    output_uri="gs://tfe-vida-data",
 )
+
 task.connect(input_files)
 task.connect(params)
 
