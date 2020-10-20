@@ -6,5 +6,46 @@
   "visualizations": "./data/visualizations",
   "artifacts": "./data/artifacts",
   "temp": "./temp",
-  "data": "./data"
+  "data": "./data",
+  "db_config": {
+    "name": "vida",
+    "host": null,
+    "pw": null,
+    "user": "geoserver",
+    "port": 5432,
+    "log_statements": false
+  },
+  "db_config_dev": {
+    "name": "vida_dev",
+    "host": null,
+    "pw": null,
+    "user": "tester",
+    "port": 5432,
+    "log_statements": true
+  },
+  "tfe_project_database":
+  {
+    "name": "vida_tfe",
+    "host": null,
+    "pw": null,
+    "user": "tfe",
+    "port": 5432,
+    "log_statements": true
+  },
+  "remote_storage_config": {
+    "key": "tfe-vida-storage@aai-cloud.iam.gserviceaccount.com",
+    "secret": null,
+    "bucket": "tfe-vida-data",
+    "base_path": "vida",
+    "provider": "google_storage"
+  },
+  "geoserver": {
+    "url": "https://geoserver.staging.vida.aai.sh/geoserver/rest/",
+    "username": null,
+    "password": null,
+    "workspace": "vida",
+    "vector_store": "vida-data",
+    "validate_ssl": true
+  },
+  "data_prefix": "vida/data"
 }
