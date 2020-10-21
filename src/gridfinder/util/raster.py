@@ -74,3 +74,21 @@ def get_clipped_data(
     boundary_shape = boundary_shape.convex_hull
 
     return mask(dataset=dataset, shapes=[boundary_shape], crop=True, nodata=nodata)
+
+
+def get_resolution_in_meters(reader: rasterio.io.DatasetReader) -> tuple:
+    if reader.crs.to_string() != "EPSG:3857":
+        # get the resolution in meters via cartesian crs
+        transform, _, _ = rasterio.warp.calculate_default_transform(
+            reader.crs.to_string(),
+            "EPSG:3857",
+            reader.width,
+            reader.height,
+            *reader.bounds,
+        )
+        pixel_size_x = transform[0]
+        pixel_size_y = -transform[4]
+    else:
+        pixel_size_x, pixel_size_y = reader.res[0], -reader.res[1]
+
+    return pixel_size_x, pixel_size_y
