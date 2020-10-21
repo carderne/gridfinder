@@ -31,12 +31,28 @@ def confusion_matrix(
     aoi: Optional[gp.GeoDataFrame] = None,
 ):
     """
-    Calculates the accuracy of a grid line prediction based the provided ground truth.
-    The cell_size_in_meters parameter controls the size of one rectangular area
-    in the prediction which is either marked as grid line (1) or no grid line (0).
+    Calculates the
+     - true positives
+     - true negatives
+     - false positives
+     - false negatives
+    of a grid line prediction based the provided ground truth.
 
+    :param ground_truth_lines: A gp.GeoDataFrame object which contains LineString objects as shapes
+                               representing the grid lines.
+    :param raster_guess_reader: A rasterio.DatasetReader object which contains the raster of predicted grid lines.
+                                Pixel values marked with 1 are considered a prediction of a grid line.
+    :param cell_size_in_meters: The cell_size_in_meters parameter controls the size of one prediction in meters.
+                                E.g. the original raster has a pixel size of 100m x 100m.
+                                A cell_size of 1000m meters means that one prediction
+                                is now the grouping of 100 original pixels.
+                                This is done for both the ground truth raster and the prediction raster.
+                                The down-sampling strategy considers a collection of pixel values as a positive
+                                prediction (value = 1) if at least one pixel in that collection has the value 1.
+    :param aoi: A gp.GeoDataFrame containing exactly one Polygon or Multipolygon marking the area of interest.
+                The CRS is expected to be the same as the raster_guess_readers' CRS.
 
-
+    :returns: ConfusionMatrix
 
     """
 
@@ -149,6 +165,4 @@ def confusion_matrix(
         )
 
     raster_ground_truth = rasterize_geo_dataframe(raster, ground_truth_lines, affine)
-    eval_metrics = measure_cell_wise_classification(raster_ground_truth, raster)
-
-    return eval_metrics
+    return measure_cell_wise_classification(raster_ground_truth, raster)

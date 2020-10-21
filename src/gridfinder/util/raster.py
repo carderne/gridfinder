@@ -77,6 +77,12 @@ def get_clipped_data(
 
 
 def get_resolution_in_meters(reader: rasterio.io.DatasetReader) -> tuple:
+    """
+    Returns the size of one pixel in the raster in meters.
+
+    :param reader: The dataset.
+    :return: width, height
+    """
     if reader.crs.to_string() != "EPSG:3857":
         # get the resolution in meters via cartesian crs
         transform, _, _ = rasterio.warp.calculate_default_transform(
