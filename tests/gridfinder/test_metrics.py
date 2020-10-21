@@ -203,8 +203,8 @@ def test_accuracy(
     expected_confusion_matrix: ConfusionMatrix,
 ):
     assert (
-            eval_confusion_matrix(ground_truth_lines, raster_guess, cell_size_in_meters)
-            == expected_confusion_matrix
+        eval_confusion_matrix(ground_truth_lines, raster_guess, cell_size_in_meters)
+        == expected_confusion_matrix
     )
 
 
@@ -238,8 +238,8 @@ def test_accuracy_with_aoi(
     expected_confusion_matrix: ConfusionMatrix,
 ):
     assert (
-            eval_confusion_matrix(
+        eval_confusion_matrix(
             ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
         )
-            == expected_confusion_matrix
+        == expected_confusion_matrix
     )

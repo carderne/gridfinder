@@ -92,7 +92,7 @@ def eval_confusion_matrix(
 
 
 def _perform_scaling(
-        raster_array: np.array, affine_mat: Affine, scaling_factor: float, crs: str
+    raster_array: np.array, affine_mat: Affine, scaling_factor: float, crs: str
 ) -> Tuple[np.array, Affine]:
     shape = (
         1,
@@ -119,12 +119,12 @@ def _perform_scaling(
 
 
 def _rasterize_geo_dataframe(
-        raster_array: np.array, data_frame: gp.GeoDataFrame, transform: Affine
+    raster_array: np.array, data_frame: gp.GeoDataFrame, transform: Affine
 ) -> np.array:
-    """ All raster values where shapes are found or which are touched
-        by a shape will have the values one, the rest zero."""
+    """All raster values where shapes are found or which are touched
+    by a shape will have the values one, the rest zero."""
     assert (
-            len(raster_array.shape) == 2
+        len(raster_array.shape) == 2
     ), f"Expected 2D array, got shape {raster_array.shape}."
     data_rows = [row.geometry for _, row in data_frame.iterrows()]
     new_raster = rasterize(
