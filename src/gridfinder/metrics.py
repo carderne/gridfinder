@@ -1,4 +1,4 @@
-""" Metrics module implements calculation of confusion matrix given a prediction """
+""" Metrics module implements calculation of confusion matrix given a prediction and ground truth. """
 from typing import Optional, Tuple
 
 import fiona
@@ -57,50 +57,6 @@ def eval_confusion_matrix(
     :returns: ConfusionMatrix
 
     """
-    def perform_scaling(
-        raster_array: np.array, affine_mat: Affine, scaling_factor: float, crs: str
-    ) -> Tuple[np.array, Affine]:
-        shape = (
-            1,
-            round(raster_array.shape[0] * scaling_factor),
-            round(raster_array.shape[1] * scaling_factor),
-        )
-        raster_out = np.empty(shape)
-
-        raster_out_transform = affine_mat * affine_mat.scale(
-            (raster_array.shape[0] / shape[0]), (raster_array.shape[1] / shape[1])
-        )
-        with fiona.Env():
-            with rasterio.Env():
-                reproject(
-                    raster_array,
-                    raster_out,
-                    src_transform=affine_mat,
-                    dst_transform=raster_out_transform,
-                    src_crs={"init": crs},
-                    dst_crs={"init": crs},
-                    resampling=Resampling.max,
-                )
-        return raster_out.squeeze(axis=0), raster_out_transform
-
-    def rasterize_geo_dataframe(
-        raster_array: np.array, data_frame: gp.GeoDataFrame, transform: Affine
-    ) -> np.array:
-        """ All raster values where shapes are found will have the values one, the rest zero."""
-        assert (
-            len(raster_array.shape) == 2
-        ), f"Expected 2D array, got shape {raster_array.shape}."
-        data_rows = [row.geometry for _, row in data_frame.iterrows()]
-        new_raster = rasterize(
-            data_rows,
-            out_shape=raster_array.shape,
-            fill=0,
-            default_value=1,
-            all_touched=True,
-            transform=transform,
-        )
-        return new_raster
-
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
         ground_truth_lines = clip_line_poly(ground_truth_lines, aoi)
@@ -125,11 +81,58 @@ def eval_confusion_matrix(
             raise ValueError(
                 f"Up-sampling not supported. Select a cell size of at least {current_cell_size_x}."
             )
-        raster, affine = perform_scaling(
+        raster, affine = _perform_scaling(
             raster, affine, scaling, crs=raster_guess_reader.crs.to_string()
         )
 
-    raster_ground_truth = rasterize_geo_dataframe(raster, ground_truth_lines, affine)
+    raster_ground_truth = _rasterize_geo_dataframe(raster, ground_truth_lines, affine)
     mat = confusion_matrix(raster_ground_truth.flatten(), raster.flatten())
 
     return ConfusionMatrix(tp=mat[1, 1], fp=mat[0, 1], fn=mat[1, 0], tn=mat[0, 0])
+
+
+def _perform_scaling(
+        raster_array: np.array, affine_mat: Affine, scaling_factor: float, crs: str
+) -> Tuple[np.array, Affine]:
+    shape = (
+        1,
+        round(raster_array.shape[0] * scaling_factor),
+        round(raster_array.shape[1] * scaling_factor),
+    )
+    raster_out = np.empty(shape)
+
+    raster_out_transform = affine_mat * affine_mat.scale(
+        (raster_array.shape[0] / shape[0]), (raster_array.shape[1] / shape[1])
+    )
+    with fiona.Env():
+        with rasterio.Env():
+            reproject(
+                raster_array,
+                raster_out,
+                src_transform=affine_mat,
+                dst_transform=raster_out_transform,
+                src_crs={"init": crs},
+                dst_crs={"init": crs},
+                resampling=Resampling.max,
+            )
+    return raster_out.squeeze(axis=0), raster_out_transform
+
+
+def _rasterize_geo_dataframe(
+        raster_array: np.array, data_frame: gp.GeoDataFrame, transform: Affine
+) -> np.array:
+    """ All raster values where shapes are found or which are touched
+        by a shape will have the values one, the rest zero."""
+    assert (
+            len(raster_array.shape) == 2
+    ), f"Expected 2D array, got shape {raster_array.shape}."
+    data_rows = [row.geometry for _, row in data_frame.iterrows()]
+    new_raster = rasterize(
+        data_rows,
+        out_shape=raster_array.shape,
+        fill=0,
+        default_value=1,
+        all_touched=True,
+        transform=transform,
+    )
+    return new_raster
