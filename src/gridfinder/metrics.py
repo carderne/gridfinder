@@ -34,10 +34,10 @@ def eval_confusion_matrix(
 ):
     """
     Calculates the
-     - true positives
-     - true negatives
-     - false positives
-     - false negatives
+    - true positives
+    - true negatives
+    - false positives
+    - false negatives
     of a grid line prediction based the provided ground truth.
 
     :param ground_truth_lines: A gp.GeoDataFrame object which contains LineString objects as shapes
@@ -55,7 +55,6 @@ def eval_confusion_matrix(
                 The CRS is expected to be the same as the raster_guess_readers' CRS.
 
     :returns: ConfusionMatrix
-
     """
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
