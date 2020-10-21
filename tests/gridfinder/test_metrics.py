@@ -13,7 +13,7 @@ import geopandas as gp
 from shapely.geometry import LineString, Polygon
 import rasterio.warp
 
-from gridfinder.metrics import confusion_matrix, ConfusionMatrix
+from gridfinder.metrics import eval_confusion_matrix, ConfusionMatrix
 
 
 TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
@@ -203,8 +203,8 @@ def test_accuracy(
     expected_confusion_matrix: ConfusionMatrix,
 ):
     assert (
-        confusion_matrix(ground_truth_lines, raster_guess, cell_size_in_meters)
-        == expected_confusion_matrix
+            eval_confusion_matrix(ground_truth_lines, raster_guess, cell_size_in_meters)
+            == expected_confusion_matrix
     )
 
 
@@ -212,7 +212,7 @@ def test_accuracy_up_sampling_fails(
     correct_guess: rasterio.DatasetReader, ground_truth_lines: gp.GeoDataFrame
 ):
     with pytest.raises(ValueError):
-        confusion_matrix(ground_truth_lines, correct_guess, 0.5)
+        eval_confusion_matrix(ground_truth_lines, correct_guess, 0.5)
 
 
 @pytest.mark.parametrize(
@@ -238,8 +238,8 @@ def test_accuracy_with_aoi(
     expected_confusion_matrix: ConfusionMatrix,
 ):
     assert (
-        confusion_matrix(
+            eval_confusion_matrix(
             ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
         )
-        == expected_confusion_matrix
+            == expected_confusion_matrix
     )

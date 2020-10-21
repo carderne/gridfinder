@@ -1,4 +1,5 @@
-from typing import Optional
+""" Metrics module implements calculation of confusion matrix given a prediction """
+from typing import Optional, Tuple
 
 import fiona
 from dataclasses import dataclass
@@ -6,6 +7,7 @@ from dataclasses import dataclass
 from affine import Affine
 import numpy as np
 import geopandas as gp
+from sklearn.metrics import confusion_matrix
 import rasterio
 from rasterio.enums import Resampling
 import rasterio.warp
@@ -24,7 +26,7 @@ class ConfusionMatrix:
     fn: float = 0.0
 
 
-def confusion_matrix(
+def eval_confusion_matrix(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess_reader: rasterio.DatasetReader,
     cell_size_in_meters: Optional[float] = None,
@@ -55,13 +57,9 @@ def confusion_matrix(
     :returns: ConfusionMatrix
 
     """
-
-    def get_scaling_factor(desired_cell_size: float, current_cell_size: float) -> float:
-        return current_cell_size / desired_cell_size
-
     def perform_scaling(
         raster_array: np.array, affine_mat: Affine, scaling_factor: float, crs: str
-    ) -> np.array:
+    ) -> Tuple[np.array, Affine]:
         shape = (
             1,
             round(raster_array.shape[0] * scaling_factor),
@@ -103,39 +101,6 @@ def confusion_matrix(
         )
         return new_raster
 
-    def measure_cell_wise_classification(
-        ground_truth: np.array, prediction: np.array
-    ) -> ConfusionMatrix:
-        assert (
-            len(ground_truth.shape) == 2
-        ), f"Expected 2d array but got {ground_truth.shape}"
-        assert ground_truth.shape == prediction.shape, (
-            f"Ground truth and prediction have unequal shape."
-            f" {ground_truth.shape} vs {prediction.shape}"
-        )
-        num_rows, num_columns = ground_truth.shape
-        true_positives = 0
-        false_positives = 0
-        true_negatives = 0
-        false_negatives = 0
-        for i in range(num_rows):
-            for j in range(num_columns):
-                predicted_value = int(prediction[i, j])
-                actual_value = int(ground_truth[i, j])
-
-                if actual_value == predicted_value == 1:
-                    true_positives += 1
-                if predicted_value == 1 and actual_value != predicted_value:
-                    false_positives += 1
-                if actual_value == predicted_value == 0:
-                    true_negatives += 1
-                if predicted_value == 0 and predicted_value != actual_value:
-                    false_negatives += 1
-
-        return ConfusionMatrix(
-            tp=true_positives, fp=false_positives, tn=true_negatives, fn=false_negatives
-        )
-
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
         ground_truth_lines = clip_line_poly(ground_truth_lines, aoi)
@@ -155,7 +120,7 @@ def confusion_matrix(
                 f" Found pixel size x {current_cell_size_x}"
                 f" and pixel size y P{current_cell_size_y}."
             )
-        scaling = get_scaling_factor(cell_size_in_meters, current_cell_size_x)
+        scaling = current_cell_size_x / cell_size_in_meters
         if scaling > 1.0:
             raise ValueError(
                 f"Up-sampling not supported. Select a cell size of at least {current_cell_size_x}."
@@ -165,4 +130,6 @@ def confusion_matrix(
         )
 
     raster_ground_truth = rasterize_geo_dataframe(raster, ground_truth_lines, affine)
-    return measure_cell_wise_classification(raster_ground_truth, raster)
+    mat = confusion_matrix(raster_ground_truth.flatten(), raster.flatten())
+
+    return ConfusionMatrix(tp=mat[1, 1], fp=mat[0, 1], fn=mat[1, 0], tn=mat[0, 0])
