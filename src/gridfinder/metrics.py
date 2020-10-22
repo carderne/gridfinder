@@ -36,13 +36,9 @@ def eval_metrics(
     cell_size_in_meters: Optional[float] = None,
     aoi: Optional[gp.GeoDataFrame] = None,
     metrics: List[str] = [confusion_matrix],
-):
+) -> dict:
     """
-    Calculates the
-    - true positives
-    - true negatives
-    - false positives
-    - false negatives
+    Calculates sklearn metrics
     of a grid line prediction based the provided ground truth.
 
     :param ground_truth_lines: A gp.GeoDataFrame object which contains LineString objects as shapes
@@ -60,7 +56,7 @@ def eval_metrics(
                 The CRS is expected to be the same as the raster_guess_readers' CRS.
     :param metrics: A sklearn.metrics object describing a metric that should be evaluated
 
-    :returns: list of metrics
+    :returns: dictionary of metrics resulting from evaluation
     """
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
