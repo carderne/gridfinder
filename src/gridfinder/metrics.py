@@ -1,5 +1,5 @@
 """ Metrics module implements calculation of confusion matrix given a prediction and ground truth. """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import fiona
 from dataclasses import dataclass
@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from affine import Affine
 import numpy as np
 import geopandas as gp
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import (
+    confusion_matrix,
+    balanced_accuracy_score,
+    classification_report,
+)
 import rasterio
 from rasterio.enums import Resampling
 import rasterio.warp
@@ -26,11 +30,12 @@ class ConfusionMatrix:
     fn: float = 0.0
 
 
-def eval_confusion_matrix(
+def eval_metrics(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess_reader: rasterio.DatasetReader,
     cell_size_in_meters: Optional[float] = None,
     aoi: Optional[gp.GeoDataFrame] = None,
+    metrics: List[str] = [confusion_matrix],
 ):
     """
     Calculates the
@@ -53,8 +58,9 @@ def eval_confusion_matrix(
                                 prediction (value = 1) if at least one pixel in that collection has the value 1.
     :param aoi: A gp.GeoDataFrame containing exactly one Polygon or Multipolygon marking the area of interest.
                 The CRS is expected to be the same as the raster_guess_readers' CRS.
+    :param metrics: A sklearn.metrics object describing a metric that should be evaluated
 
-    :returns: ConfusionMatrix
+    :returns: list of metrics
     """
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
@@ -85,9 +91,18 @@ def eval_confusion_matrix(
         )
 
     raster_ground_truth = _rasterize_geo_dataframe(raster, ground_truth_lines, affine)
-    mat = confusion_matrix(raster_ground_truth.flatten(), raster.flatten())
-
-    return ConfusionMatrix(tp=mat[1, 1], fp=mat[0, 1], fn=mat[1, 0], tn=mat[0, 0])
+    results = {}
+    for metric in metrics:
+        if metric == confusion_matrix:
+            mat = confusion_matrix(raster_ground_truth.flatten(), raster.flatten())
+            results["confusion_matrix"] = ConfusionMatrix(
+                tp=mat[1, 1], fp=mat[0, 1], fn=mat[1, 0], tn=mat[0, 0]
+            )
+        else:
+            results[metric.__name__] = metric(
+                raster_ground_truth.flatten(), raster.flatten()
+            )
+    return results
 
 
 def _perform_scaling(
