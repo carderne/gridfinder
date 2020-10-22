@@ -95,21 +95,11 @@ if not cfg["api"]["api_server"]:
     raise RuntimeError(
         "Prevented Trains experiment upload to AllegroAI demo server. Did you run 'trains init'?"
     )
-if (
-    not cfg["sdk"]["google"]["storage"]["credentials_json"]
-    and not cfg["sdk"]["google"]["storage"]["credentials"]
-):
-    raise RuntimeError(
-        "Prevented Trains artifacts upload to Google Cloud Storage. Did you add GCS credentials to your "
-        "~/trains.conf?"
-    )
-
 
 task = Task.init(
     project_name="Gridfinder",
     task_name="Nigeria Gridfinder run_gridfinder.py",
     reuse_last_task_id=False,
-    output_uri="gs://tfe-vida-data",
 )
 
 task.connect(input_files)
@@ -173,7 +163,6 @@ plt.savefig("ntl_thresh.png")
 roads_raster, affine = prepare_roads(roads_in, aoi_in, targets_out)
 save_2d_array_as_raster(roads_out, roads_raster, affine, DEFAULT_CRS, nodata=-1)
 print("Costs prepared")
-# plt.imshow(roads_raster, cmap='viridis', vmin=0, vmax=1)
 plt.savefig("roads_raster.png")
 
 targets, costs, start, affine = get_targets_costs(targets_clean_out, roads_out)
@@ -190,14 +179,12 @@ dist = optimise(
     animate_path=animate_out,
 )
 save_2d_array_as_raster(dist_out, dist, affine, DEFAULT_CRS)
-# plt.imshow(dist)
 plt.savefig("dist.png")
 
 
 guess = threshold_distances(dist, threshold=cutoff)
 save_2d_array_as_raster(guess_out, guess, affine, DEFAULT_CRS)
 print("Got guess")
-# plt.imshow(guess, cmap='viridis')
 plt.savefig("guess.png")
 
 task.upload_artifact("Prediction", guess)
@@ -208,7 +195,6 @@ task.upload_artifact("Prediction raster", guess_out)
 guess_skel = thin(guess)
 save_2d_array_as_raster(guess_skeletonized_out, guess_skel, affine, DEFAULT_CRS)
 print("Skeletonized")
-# plt.imshow(guess_skel)
 plt.savefig("guess_skel.png")
 
 
