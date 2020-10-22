@@ -1,20 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # gridfinder
-# Run through the full gridfinder model from data input to final guess for Burundi.
-# Note that the 'truth' data used for the grid here is very bad, so the accuracy results don't mean much.
-#
-# ## Before running the notebook
-#
-# Install the library and its dependencies with, if you haven't done so already
-# ```
-# pip install -e .
-# ```
-# from the root directory. You can also execute this command directly in the notebook but will need to reload the
-# kernel afterwards
-
-import sys, os
+import os
 
 
 import matplotlib.pyplot as plt
