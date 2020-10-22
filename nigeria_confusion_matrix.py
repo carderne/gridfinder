@@ -13,26 +13,15 @@ import geopandas as gpd
 from matplotlib import cm
 import seaborn as sns
 import rasterio
-import numpy as np
-
-import folium
-
-from gridfinder.gridfinder import optimise, estimate_mem_use, get_targets_costs
-from gridfinder.post import raster_to_lines, thin, threshold_distances, accuracy
-from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
-from gridfinder.util.loading import open_raster_in_tar
-from gridfinder.prepare import merge_rasters, drop_zero_pop, prepare_ntl, prepare_roads
-from gridfinder.electrificationfilter import NightlightFilter
 from gridfinder.metrics import eval_confusion_matrix
 from config import get_config
-from data_access.remote_storage import RemoteStorage, RemoteStorageConfig
 
 c = get_config(reload=True)
 folder_ntl_in = c.datafile_path("nightlight_imagery/75N060W", stage=c.RAW)
-aoi_in = c.datafile_path("nigeria-kano.geojson", stage=c.GROUND_TRUTH)
+aoi_in = c.datafile_path("nigeria-boundary.geojson", stage=c.GROUND_TRUTH)
 roads_in = c.datafile_path("nigeria-roads-200101.gpkg", stage=c.GROUND_TRUTH)
 pop_in = c.datafile_path("population_nga_2018-10-01.tif", stage=c.GROUND_TRUTH)
-grid_truth = c.datafile_path("grid-files/nigeria.gpkg", stage=c.GROUND_TRUTH)
+grid_truth = c.datafile_path("nigeriafinal.geojson", stage=c.GROUND_TRUTH)
 
 folder_ntl_out = c.datafile_path(
     "ntl_nigeria_clipped", stage=c.PROCESSED, check_existence=False
@@ -52,7 +41,7 @@ roads_out = c.datafile_path(
 
 dist_out = c.datafile_path("nigeria_dist.tif", stage=c.PROCESSED, check_existence=False)
 guess_out = c.datafile_path(
-    "nigeria_guess.tif", stage=c.PROCESSED, check_existence=False
+    "nigeria_guess_chris.tif", stage=c.PROCESSED, check_existence=False
 )
 guess_skeletonized_out = c.datafile_path(
     "nigeria_guess_skel.tif", stage=c.PROCESSED, check_existence=False
