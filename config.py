@@ -2,7 +2,7 @@ import json
 import logging.handlers
 import os
 from pathlib import Path
-
+from data_access.remote_storage import RemoteStorageConfig
 from typing import List, Union, Dict
 
 
@@ -130,6 +130,10 @@ class __Configuration:
     @property
     def data_ground_truth(self):
         return self._get_existing_path("data_ground_truth")
+
+    @property
+    def remote_storage(self):
+        return RemoteStorageConfig(**self._get_non_empty_entry("remote_storage_config"))
 
     def datafile_path(
         self, filename: str, stage="raw", relative=False, check_existence=True
