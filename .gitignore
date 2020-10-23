@@ -1,4 +1,5 @@
 # Custom
+config_local.json
 server/
 test_output/
 quickrun.py

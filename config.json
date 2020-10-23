@@ -6,5 +6,29 @@
   "visualizations": "./data/visualizations",
   "artifacts": "./data/artifacts",
   "temp": "./temp",
-  "data": "./data"
+  "data": "./data",
+  "db_config": {
+    "name": "vida",
+    "host": null,
+    "pw": null,
+    "user": "geoserver",
+    "port": 5432,
+    "log_statements": false
+  },
+  "db_config_dev": {
+    "name": "vida_dev",
+    "host": null,
+    "pw": null,
+    "user": "tester",
+    "port": 5432,
+    "log_statements": true
+  },
+  "remote_storage_config": {
+    "key": "tfe-vida-storage@aai-cloud.iam.gserviceaccount.com",
+    "secret": null,
+    "bucket": "tfe-vida-data",
+    "base_path": "vida",
+    "provider": "google_storage"
+  },
+  "data_prefix": "vida/data"
 }
