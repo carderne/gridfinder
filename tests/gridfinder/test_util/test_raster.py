@@ -10,8 +10,6 @@ from shapely.geometry import Point, Polygon, MultiPolygon
 
 from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
 
-DEFAULT_CRS = "EPSG:4326"
-
 
 @pytest.fixture()
 def output_file(tmpdir_factory):
@@ -34,24 +32,24 @@ def sample_mul_polygon_geodf(test_resources) -> gpd.GeoDataFrame:
 
 
 def test_save_2d_array_as_raster_inputValidation(
-    three_dim_array, sample_transform, output_file
+    three_dim_array, sample_transform, output_file, default_crs
 ):
     with pytest.raises(ValueError):
         save_2d_array_as_raster(
-            output_file, three_dim_array, sample_transform, DEFAULT_CRS
+            output_file, three_dim_array, sample_transform, default_crs
         )
 
 
 def test_save_2d_array_as_raster_savedArrayIsCorrect(
-    two_dim_array, sample_transform, output_file
+    two_dim_array, sample_transform, output_file, default_crs
 ):
-    save_2d_array_as_raster(output_file, two_dim_array, sample_transform, DEFAULT_CRS)
+    save_2d_array_as_raster(output_file, two_dim_array, sample_transform, default_crs)
     with rasterio.open(output_file) as dataset:
         dataset: DatasetReader
         data, transform, crs = dataset.read(), dataset.transform, dataset.crs
         assert np.allclose(two_dim_array, data)
         assert sample_transform == transform
-        assert dataset.crs.to_string() == DEFAULT_CRS
+        assert dataset.crs.to_string() == default_crs
 
 
 def test_get_clipped_data_inputValidation(sample_ntl_raster, caplog):
