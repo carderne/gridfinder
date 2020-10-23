@@ -23,15 +23,6 @@
     "port": 5432,
     "log_statements": true
   },
-  "tfe_project_database":
-  {
-    "name": "vida_tfe",
-    "host": null,
-    "pw": null,
-    "user": "tfe",
-    "port": 5432,
-    "log_statements": true
-  },
   "remote_storage_config": {
     "key": "tfe-vida-storage@aai-cloud.iam.gserviceaccount.com",
     "secret": null,
