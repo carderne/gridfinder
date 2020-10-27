@@ -11,14 +11,19 @@ import seaborn as sns
 
 import numpy as np
 
-from gridfinder.gridfinder import optimise, estimate_mem_use, get_targets_costs
-from gridfinder.post import raster_to_lines, thin, threshold_distances, accuracy
-from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
-from gridfinder.util.loading import open_raster_in_tar
-from gridfinder.prepare import merge_rasters, drop_zero_pop, prepare_ntl, prepare_roads
+from src.gridfinder.gridfinder import optimise, estimate_mem_use, get_targets_costs
+from src.gridfinder.post import raster_to_lines, thin, threshold_distances, accuracy
+from src.gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
+from src.gridfinder.util.loading import open_raster_in_tar
+from src.gridfinder.prepare import (
+    merge_rasters,
+    drop_zero_pop,
+    prepare_ntl,
+    prepare_roads,
+)
 from gridfinder.electrificationfilter import NightlightFilter
 from config import get_config
-from data_access.remote_storage import RemoteStorage, RemoteStorageConfig
+from data_access.remote_storage import RemoteStorage
 
 from trains import Task, backend_api
 
@@ -27,10 +32,13 @@ c = get_config(reload=True)
 remote_storage = RemoteStorage(c.remote_storage)
 remote_storage.pull_directory("data/raw/nightlight_imagery/75N060W", "")
 folder_ntl_in = c.datafile_path("nightlight_imagery/75N060W", stage=c.RAW)
-aoi_in = c.datafile_path("nigeria-boundary.geojson", stage=c.GROUND_TRUTH)
+aoi_in = c.datafile_path("nigeria-kano.geojson", stage=c.GROUND_TRUTH)
 roads_in = c.datafile_path("nigeria-roads-200101.gpkg", stage=c.GROUND_TRUTH)
 pop_in = c.datafile_path("population_nga_2018-10-01.tif", stage=c.GROUND_TRUTH)
 grid_truth = c.datafile_path("nigeriafinal.geojson", stage=c.GROUND_TRUTH)
+power_in = c.datafile_path(
+    os.path.join("nigeria", "nigeria-power-200101.gpkg"), stage=c.PROCESSED
+)
 
 folder_ntl_out = c.datafile_path(
     "ntl_nigeria_clipped", stage=c.PROCESSED, check_existence=False
@@ -76,10 +84,11 @@ cutoff = (
 
 input_files = {
     "folder_ntl_in": folder_ntl_in,
-    "aoi_in": aoi_in,
+    "aoi": aoi_in,
     "roads_in": roads_in,
     "pop_in": pop_in,
     "grid_truth": grid_truth,
+    "power": power_in,
 }
 
 params = {
@@ -99,7 +108,7 @@ if not cfg["api"]["api_server"]:
 task = Task.init(
     project_name="Gridfinder",
     task_name="Nigeria Gridfinder run_gridfinder.py",
-    reuse_last_task_id=False,
+    reuse_last_task_id=True,
 )
 
 task.connect(input_files)
@@ -108,15 +117,16 @@ task.connect(params)
 DEFAULT_CRS = "EPSG:4326"
 
 ntl_files_basedir = folder_ntl_in
-aoi_boundary_geodf = gpd.read_file(aoi_in)
+aoi = gpd.read_file(aoi_in)
 
 for ntl_file in os.listdir(ntl_files_basedir):
     full_path = os.path.join(ntl_files_basedir, ntl_file)
     output_path = os.path.join(
         folder_ntl_out, f"{ntl_file[:-4]}.tif"
     )  # stripping off the .tgz
+    print(full_path)
     with open_raster_in_tar(full_path, file_index=1) as raster:
-        clipped_data, transform = get_clipped_data(raster, aoi_boundary_geodf)
+        clipped_data, transform = get_clipped_data(raster, aoi)
         save_2d_array_as_raster(
             output_path, clipped_data, transform, crs=raster.crs.to_string()
         )
@@ -153,14 +163,12 @@ ntl_thresh, affine = prepare_ntl(
 save_2d_array_as_raster(targets_out, ntl_thresh, affine, DEFAULT_CRS)
 print("Targets prepared")
 
-aoi = gpd.read_file(aoi_in)
-
 targets_clean = drop_zero_pop(targets_out, pop_in, aoi)
 save_2d_array_as_raster(targets_clean_out, targets_clean, affine, DEFAULT_CRS)
 print("Removed zero pop")
 plt.savefig("ntl_thresh.png")
-
-roads_raster, affine = prepare_roads(roads_in, aoi_in, targets_out)
+power = gpd.read_file(input_files["power"])
+roads_raster, affine = prepare_roads(roads_in, aoi, targets_out, power)
 save_2d_array_as_raster(roads_out, roads_raster, affine, DEFAULT_CRS, nodata=-1)
 print("Costs prepared")
 plt.savefig("roads_raster.png")
@@ -199,6 +207,7 @@ plt.savefig("guess_skel.png")
 
 
 guess_gdf = raster_to_lines(guess_skel, affine, DEFAULT_CRS)
+guess_gdf.append(power)
 guess_gdf.to_file(guess_vec_out, driver="GPKG")
 print("Converted to geom")
 
