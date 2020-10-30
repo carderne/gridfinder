@@ -91,7 +91,9 @@ def run_gridfinder(
         grid_truth_data, stage=c.GROUND_TRUTH, check_existence=False, relative=True
     )
     if power_data is not None:
-        input_files["power"] = c.datafile_path(power_data, stage=c.PROCESSED)
+        input_files["power"] = c.datafile_path(
+            power_data, stage=c.PROCESSED, check_existence=False, relative=True
+        )
     for _, path in input_files.items():
         remote_storage.pull(path, "")
     folder_ntl_out = c.datafile_path(
