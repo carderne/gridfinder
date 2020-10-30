@@ -45,7 +45,7 @@ from trains import Task, backend_api
 )
 @click.option(
     "--nightlight-data",
-    default="nigeria/nightlight_imagery/75N060W",
+    default="nightlight_imagery/75N060W",
     help="Path to directory where nightlight imagery should be stored to, relative to data/raw/ directory",
 )
 @click.option(
@@ -72,11 +72,24 @@ def run_gridfinder(
     log = logging.getLogger(__name__)
     input_files = {}
     remote_storage = RemoteStorage(c.remote_storage)
-    input_files["folder_ntl_in"] = c.datafile_path(nightlight_data, stage=c.RAW)
-    input_files["aoi_in"] = c.datafile_path(area_of_interest_data, stage=c.GROUND_TRUTH)
-    input_files["roads_in"] = c.datafile_path(roads_data, stage=c.GROUND_TRUTH)
-    input_files["pop_in"] = c.datafile_path(population_data, stage=c.GROUND_TRUTH)
-    input_files["grid_truth"] = c.datafile_path(grid_truth_data, stage=c.GROUND_TRUTH)
+    input_files["folder_ntl_in"] = c.datafile_path(
+        nightlight_data, stage=c.RAW, check_existence=False, relative=True
+    )
+    input_files["aoi_in"] = c.datafile_path(
+        area_of_interest_data,
+        stage=c.GROUND_TRUTH,
+        check_existence=False,
+        relative=True,
+    )
+    input_files["roads_in"] = c.datafile_path(
+        roads_data, stage=c.GROUND_TRUTH, check_existence=False, relative=True
+    )
+    input_files["pop_in"] = c.datafile_path(
+        population_data, stage=c.GROUND_TRUTH, check_existence=False, relative=True
+    )
+    input_files["grid_truth"] = c.datafile_path(
+        grid_truth_data, stage=c.GROUND_TRUTH, check_existence=False, relative=True
+    )
     if power_data is not None:
         input_files["power"] = c.datafile_path(power_data, stage=c.PROCESSED)
     for _, path in input_files.items():
@@ -142,6 +155,7 @@ def run_gridfinder(
             save_2d_array_as_raster(
                 output_path, clipped_data, transform, crs=raster.crs.to_string()
             )
+            log.info(f"Stored {full_path} as 2d raster in {output_path}.")
 
     raster_merged, affine, _ = merge_rasters(
         folder_ntl_out, percentile=params["percentile"]
