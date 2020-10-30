@@ -231,30 +231,25 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     return targets
 
 
-def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
+def prepare_roads(roads_in, aoi, ntl_in, power=None):
     """Prepare a roads feature layer for use in algorithm.
 
     :param roads_in: Path to a roads feature layer. This implementation is specific to
         OSM data and won't assign proper weights to other data inputs.
     :type roads_in: str, Path
-    :param aoi_in: AOI to clip roads.
-    :type aoi_in: str, Path or GeoDataFrame
+    :param aoi: AOI to clip roads.
+    :type aoi: str, Path or GeoDataFrame
+    :param power: OSM power lines
+    :type power: gp.GeoDataFrame
     :param ntl_in: Path to a raster file, only used for correct shape and
         affine of roads raster.
     :type ntl_in: str, Path
-    :param include_power:  (Default value = True)
-
 
     """
 
     ntl_rd = rasterio.open(ntl_in)
     shape = ntl_rd.read(1).shape
     affine = ntl_rd.transform
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
 
     roads_masked = gpd.read_file(roads_in, mask=aoi)
     roads = gpd.sjoin(roads_masked, aoi, how="inner", op="intersects")
@@ -270,10 +265,10 @@ def prepare_roads(roads_in, aoi_in, ntl_in, include_power=True):
     roads.loc[roads["highway"] == "residential", "weight"] = 1 / 4
     roads.loc[roads["highway"] == "service", "weight"] = 1 / 3
 
-    # Power lines get weight 0
-    if "power" in roads:
-        roads.loc[roads["power"] == "line", "weight"] = 0
-
+    # ignore locations that already have a high voltage line
+    if power is not None:
+        roads = gpd.sjoin(roads, power, how="left", op="intersects")
+        roads.loc[roads["power_right"] == "line", "weight"] = 0
     roads = roads[roads.weight != 1]
 
     # sort by weight descending so that lower weight (bigger roads) are
