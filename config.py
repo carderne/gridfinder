@@ -2,7 +2,6 @@ import json
 import logging.handlers
 import os
 from pathlib import Path
-from data_access.remote_storage import RemoteStorageConfig
 from typing import List, Union, Dict
 
 
