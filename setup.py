@@ -10,7 +10,6 @@ setup(
     version="1.2.0-dev6",
     description="Library for finding gridlines from nightlight imagery",
     install_requires=open("requirements.txt").readlines()[1:],
-    dependency_links=["https://nexus.admin.aai.sh/repository/aai-pypi/simple"],
     setup_requires=["wheel"],
     tests_require=test_requirements,
     author="appliedAI and Chris Ardene",
