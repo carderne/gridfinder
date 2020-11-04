@@ -13,8 +13,7 @@ import geopandas as gp
 from shapely.geometry import LineString, Polygon
 import rasterio.warp
 
-from gridfinder.metrics import eval_metrics, ConfusionMatrix
-
+from gridfinder.metrics import eval_metrics, _perform_scaling
 
 TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
 
@@ -149,64 +148,52 @@ def raster_saver(tmpdir_factory):
 @pytest.mark.parametrize(
     ["raster_guess", "cell_size_in_meters", "expected_confusion_matrix"],
     [
-        (
-            pytest.lazy_fixture("correct_guess"),
-            None,
-            ConfusionMatrix(tp=4, fp=0, tn=32, fn=0),
-        ),
+        (pytest.lazy_fixture("correct_guess"), None, np.array([[32, 0], [0, 4]])),
         (
             pytest.lazy_fixture("correct_guess_but_shifted_left"),
             None,
-            ConfusionMatrix(tp=0, fp=4, tn=28, fn=4),
+            np.array([[28, 4], [4, 0]]),
         ),
         (
             pytest.lazy_fixture("partially_correct_guess"),
             None,
-            ConfusionMatrix(tp=3, fp=0, tn=32, fn=1),
+            np.array([[32, 0], [1, 3]]),
         ),
         (
             pytest.lazy_fixture("partially_correct_guess_but_shifted_left"),
             None,
-            ConfusionMatrix(tp=0, fp=3, tn=29, fn=4),
+            np.array([[29, 3], [4, 0]]),
         ),
-        (
-            pytest.lazy_fixture("correct_guess"),
-            2.0,
-            ConfusionMatrix(tp=3, fp=0, tn=6, fn=0),
-        ),
+        (pytest.lazy_fixture("correct_guess"), 2.0, np.array([[6, 0], [0, 3]])),
         (
             pytest.lazy_fixture("correct_guess_but_shifted_left"),
             2.0,
-            ConfusionMatrix(tp=3, fp=0, tn=6, fn=0),
+            np.array([[6, 0], [0, 3]]),
         ),
         (
             pytest.lazy_fixture("partially_correct_guess"),
             2.0,
-            ConfusionMatrix(tp=2, fp=0, tn=6, fn=1),
+            np.array([[6, 0], [1, 2]]),
         ),
         (
             pytest.lazy_fixture("partially_correct_guess_but_shifted_left"),
             2.0,
-            ConfusionMatrix(tp=2, fp=0, tn=6, fn=1),
+            np.array([[6, 0], [1, 2]]),
         ),
-        (
-            pytest.lazy_fixture("correct_guess"),
-            3.0,
-            ConfusionMatrix(tp=2, fp=0, tn=2, fn=0),
-        ),
+        (pytest.lazy_fixture("correct_guess"), 3.0, np.array([[2, 0], [0, 2]])),
     ],
 )
 def test_accuracy(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess: rasterio.DatasetReader,
     cell_size_in_meters: Optional[int],
-    expected_confusion_matrix: ConfusionMatrix,
+    expected_confusion_matrix: np.array,
 ):
-    assert (
+    assert np.array_equal(
         eval_metrics(ground_truth_lines, raster_guess, cell_size_in_meters)[
             "confusion_matrix"
-        ]
-        == expected_confusion_matrix
+        ],
+        expected_confusion_matrix,
     )
 
 
@@ -220,16 +207,8 @@ def test_accuracy_up_sampling_fails(
 @pytest.mark.parametrize(
     ["raster_guess", "cell_size_in_meters", "expected_confusion_matrix"],
     [
-        (
-            pytest.lazy_fixture("correct_guess"),
-            None,
-            ConfusionMatrix(tp=3, fp=0, tn=13, fn=0),
-        ),
-        (
-            pytest.lazy_fixture("correct_guess"),
-            2.0,
-            ConfusionMatrix(tp=2, fp=0, tn=2, fn=0),
-        ),
+        (pytest.lazy_fixture("correct_guess"), None, np.array([[13, 0], [0, 3]])),
+        (pytest.lazy_fixture("correct_guess"), 2.0, np.array([[2, 0], [0, 2]])),
     ],
 )
 def test_accuracy_with_aoi(
@@ -237,11 +216,48 @@ def test_accuracy_with_aoi(
     cell_size_in_meters: int,
     sample_aoi: gp.GeoDataFrame,
     ground_truth_lines: gp.GeoDataFrame,
-    expected_confusion_matrix: ConfusionMatrix,
+    expected_confusion_matrix: np.array,
 ):
-    assert (
+    assert np.array_equal(
         eval_metrics(
             ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
-        )["confusion_matrix"]
-        == expected_confusion_matrix
+        )["confusion_matrix"],
+        expected_confusion_matrix,
     )
+
+
+@pytest.mark.parametrize(
+    ["raster_guess", "scaling_factor"],
+    [
+        (
+            pytest.lazy_fixture("correct_guess"),
+            1,
+        ),
+        (
+            pytest.lazy_fixture("correct_guess"),
+            2,
+        ),
+        (
+            pytest.lazy_fixture("correct_guess"),
+            3,
+        ),
+    ],
+)
+def test_affine_matrix_after_scaling(
+    raster_guess: rasterio.DatasetReader,
+    scaling_factor: int,
+    ground_truth_lines: gp.GeoDataFrame,
+):
+    affine = raster_guess.transform
+    raster, new_affine = _perform_scaling(
+        raster_guess.read(1),
+        affine_mat=raster_guess.transform,
+        scaling_factor=scaling_factor,
+        crs=raster_guess.crs.to_string(),
+    )
+    assert affine.a == new_affine.a * scaling_factor
+    assert affine.b == new_affine.b
+    assert affine.c == new_affine.c
+    assert affine.d == new_affine.d
+    assert affine.e == new_affine.e * scaling_factor
+    assert affine.f == new_affine.f

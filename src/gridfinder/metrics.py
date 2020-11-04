@@ -9,8 +9,6 @@ import numpy as np
 import geopandas as gp
 from sklearn.metrics import (
     confusion_matrix,
-    balanced_accuracy_score,
-    classification_report,
 )
 import rasterio
 from rasterio.enums import Resampling
@@ -20,14 +18,6 @@ from rasterio.features import rasterize
 
 from gridfinder._util import clip_line_poly
 from gridfinder.util.raster import get_clipped_data, get_resolution_in_meters
-
-
-@dataclass()
-class ConfusionMatrix:
-    tp: float = 0.0
-    fp: float = 0.0
-    tn: float = 0.0
-    fn: float = 0.0
 
 
 def eval_metrics(
@@ -85,19 +75,12 @@ def eval_metrics(
         raster, affine = _perform_scaling(
             raster, affine, scaling, crs=raster_guess_reader.crs.to_string()
         )
-
     raster_ground_truth = _rasterize_geo_dataframe(raster, ground_truth_lines, affine)
     results = {}
     for metric in metrics:
-        if metric == confusion_matrix:
-            mat = confusion_matrix(raster_ground_truth.flatten(), raster.flatten())
-            results["confusion_matrix"] = ConfusionMatrix(
-                tp=mat[1, 1], fp=mat[0, 1], fn=mat[1, 0], tn=mat[0, 0]
-            )
-        else:
-            results[metric.__name__] = metric(
-                raster_ground_truth.flatten(), raster.flatten()
-            )
+        results[metric.__name__] = metric(
+            raster_ground_truth.flatten(), raster.flatten()
+        )
     return results
 
 
@@ -112,8 +95,9 @@ def _perform_scaling(
     raster_out = np.empty(shape)
 
     raster_out_transform = affine_mat * affine_mat.scale(
-        (raster_array.shape[0] / shape[0]), (raster_array.shape[1] / shape[1])
+        (raster_array.shape[0] / shape[1]), (raster_array.shape[1] / shape[2])
     )
+
     with fiona.Env():
         with rasterio.Env():
             reproject(
