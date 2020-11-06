@@ -24,9 +24,9 @@
     "log_statements": true
   },
   "remote_storage_config": {
-    "key": "tfe-vida-storage@aai-cloud.iam.gserviceaccount.com",
+    "key": "vida-staging@appliedai-vida.iam.gserviceaccount.com",
     "secret": null,
-    "bucket": "tfe-vida-data",
+    "bucket": "vida-staging",
     "base_path": "vida",
     "provider": "google_storage"
   },
