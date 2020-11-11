@@ -1,15 +1,12 @@
 """ Metrics module implements calculation of confusion matrix given a prediction and ground truth. """
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Callable
 
 import fiona
-from dataclasses import dataclass
 
 from affine import Affine
 import numpy as np
 import geopandas as gp
-from sklearn.metrics import (
-    confusion_matrix,
-)
+
 import rasterio
 from rasterio.enums import Resampling
 import rasterio.warp
@@ -20,16 +17,14 @@ from gridfinder._util import clip_line_poly
 from gridfinder.util.raster import get_clipped_data, get_resolution_in_meters
 
 
-def eval_metrics(
+def prepare_prediction_for_metrics(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess_reader: rasterio.DatasetReader,
     cell_size_in_meters: Optional[float] = None,
     aoi: Optional[gp.GeoDataFrame] = None,
-    metrics: List[str] = [confusion_matrix],
-) -> dict:
+):
     """
-    Calculates sklearn metrics
-    of a grid line prediction based the provided ground truth.
+    This function calculates the two Tensors y_pred, y_true suitable for computation of loss or metrics functions.
 
     :param ground_truth_lines: A gp.GeoDataFrame object which contains LineString objects as shapes
                                representing the grid lines.
@@ -44,9 +39,8 @@ def eval_metrics(
                                 prediction (value = 1) if at least one pixel in that collection has the value 1.
     :param aoi: A gp.GeoDataFrame containing exactly one Polygon or Multipolygon marking the area of interest.
                 The CRS is expected to be the same as the raster_guess_readers' CRS.
-    :param metrics: A sklearn.metrics object describing a metric that should be evaluated
 
-    :returns: dictionary of metrics resulting from evaluation
+    :returns: y_pred, y_true: Two binary 1-D arrays of same length containing.
     """
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
@@ -76,12 +70,7 @@ def eval_metrics(
             raster, affine, scaling, crs=raster_guess_reader.crs.to_string()
         )
     raster_ground_truth = _rasterize_geo_dataframe(raster, ground_truth_lines, affine)
-    results = {}
-    for metric in metrics:
-        results[metric.__name__] = metric(
-            raster_ground_truth.flatten(), raster.flatten()
-        )
-    return results
+    return raster.flatten(), raster_ground_truth.flatten()
 
 
 def _perform_scaling(

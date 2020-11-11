@@ -12,8 +12,9 @@ import numpy as np
 import geopandas as gp
 from shapely.geometry import LineString, Polygon
 import rasterio.warp
+from sklearn.metrics import confusion_matrix
 
-from gridfinder.metrics import eval_metrics, _perform_scaling
+from gridfinder.metrics import prepare_prediction_for_metrics, _perform_scaling
 
 TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
 
@@ -183,25 +184,25 @@ def raster_saver(tmpdir_factory):
         (pytest.lazy_fixture("correct_guess"), 3.0, np.array([[2, 0], [0, 2]])),
     ],
 )
-def test_accuracy(
+def test_on_confusion_matrix(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess: rasterio.DatasetReader,
     cell_size_in_meters: Optional[int],
     expected_confusion_matrix: np.array,
 ):
+    y_pred, y_true = prepare_prediction_for_metrics(
+        ground_truth_lines, raster_guess, cell_size_in_meters
+    )
     assert np.array_equal(
-        eval_metrics(ground_truth_lines, raster_guess, cell_size_in_meters)[
-            "confusion_matrix"
-        ],
-        expected_confusion_matrix,
+        confusion_matrix(y_true=y_true, y_pred=y_pred), expected_confusion_matrix
     )
 
 
-def test_accuracy_up_sampling_fails(
+def test_up_sampling_fails(
     correct_guess: rasterio.DatasetReader, ground_truth_lines: gp.GeoDataFrame
 ):
     with pytest.raises(ValueError):
-        eval_metrics(ground_truth_lines, correct_guess, 0.5)
+        prepare_prediction_for_metrics(ground_truth_lines, correct_guess, 0.5)
 
 
 @pytest.mark.parametrize(
@@ -211,18 +212,18 @@ def test_accuracy_up_sampling_fails(
         (pytest.lazy_fixture("correct_guess"), 2.0, np.array([[2, 0], [0, 2]])),
     ],
 )
-def test_accuracy_with_aoi(
+def test_aoi_on_confusion_matrix(
     raster_guess: rasterio.DatasetReader,
     cell_size_in_meters: int,
     sample_aoi: gp.GeoDataFrame,
     ground_truth_lines: gp.GeoDataFrame,
     expected_confusion_matrix: np.array,
 ):
+    y_pred, y_true = prepare_prediction_for_metrics(
+        ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
+    )
     assert np.array_equal(
-        eval_metrics(
-            ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
-        )["confusion_matrix"],
-        expected_confusion_matrix,
+        confusion_matrix(y_true=y_true, y_pred=y_pred), expected_confusion_matrix
     )
 
 
