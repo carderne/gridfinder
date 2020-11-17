@@ -268,7 +268,10 @@ def prepare_roads(roads_in, aoi, ntl_in, power=None):
     # ignore locations that already have a high voltage line
     if power is not None:
         roads = gpd.sjoin(roads, power, how="left", op="intersects")
-        roads.loc[roads["power_right"] == "line", "weight"] = 0
+        if "power_right" in roads.columns:
+            roads.loc[roads["power_right"] == "line", "weight"] = 0
+        elif "power" in roads.columns:
+            roads.loc[roads["power"] == "line", "weight"] = 0
     roads = roads[roads.weight != 1]
 
     # sort by weight descending so that lower weight (bigger roads) are
