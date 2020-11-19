@@ -27,7 +27,6 @@ from rasterio.features import rasterize
 from rasterio.warp import reproject, Resampling
 from gridfinder.util.raster import get_clipped_data
 from gridfinder.electrificationfilter import ElectrificationFilter
-from sensai.util.tracking import timed
 
 
 def merge_rasters(folder: Union[str, Path], percentile=70):
@@ -137,7 +136,6 @@ def _upsample(affine: gpd.GeoDataFrame, ntl_filtered: np.ndarray, upsample_by: i
     return ntl_interp, newaff
 
 
-@timed
 def drop_zero_pop(
     targets_in: Union[str, Path],
     pop_in: Union[str, Path],
