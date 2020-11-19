@@ -13,8 +13,6 @@ Functions:
 """
 
 import os
-import copy
-import logging
 from scipy.ndimage import label
 from pathlib import Path
 from typing import Union
