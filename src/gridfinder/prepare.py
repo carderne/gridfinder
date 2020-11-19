@@ -13,6 +13,7 @@ Functions:
 """
 
 import os
+from scipy.ndimage import label
 from pathlib import Path
 from typing import Union
 
@@ -135,28 +136,31 @@ def _upsample(affine: gpd.GeoDataFrame, ntl_filtered: np.ndarray, upsample_by: i
     return ntl_interp, newaff
 
 
-def drop_zero_pop(targets_in, pop_in, aoi):
-    """Drop electrified cells with no other evidence of human activity.
+def drop_zero_pop(
+    targets_in: Union[str, Path],
+    pop_in: Union[str, Path],
+    aoi: Union[str, Path, gpd.GeoDataFrame],
+) -> np.array:
+    """
+    This function first reprojects the clipped population dataset to match
+    the resolution of the targets.
+    Afterwards it finds connected components (pixels) in the target dataset.
+    Then it checks if the connected component has population of bigger than one.
+    If not, the target is set to zero for the whole component area.
 
     :param targets_in: Path to output from prepare_ntl()
-    :type targets_in: str, Path
     :param pop_in: Path to a population raster such as GHS or HRSL.
-    :type pop_in: str, Path
     :param aoi: An AOI to use to clip the population raster.
-    :type aoi: str, Path or GeoDataFrame
 
-
+    :returns Processed Targets
     """
-
     if isinstance(aoi, (str, Path)):
         aoi = gpd.read_file(aoi)
-
     # Clip population layer to AOI
     with rasterio.open(pop_in) as dataset:
         crs = dataset.crs
         clipped, affine = get_clipped_data(dataset, aoi)
     # clipped = clipped[0]  # no longer needed, fixed in clip_raster
-
     # We need to warp the population layer to exactly overlap with targets
     # First get array, affine and crs from targets (which is what we)
     targets_rd = rasterio.open(targets_in)
@@ -164,7 +168,6 @@ def drop_zero_pop(targets_in, pop_in, aoi):
     ghs_proj = np.empty_like(targets)
     dest_affine = targets_rd.transform
     dest_crs = targets_rd.crs
-
     # Then use reproject
     with rasterio.Env():
         reproject(
@@ -177,56 +180,19 @@ def drop_zero_pop(targets_in, pop_in, aoi):
             resampling=Resampling.bilinear,
         )
 
-    # Finally read to run algorithm to drop blobs (areas of target==1)
-    # where there is no underlying population
+    # neighbourhood filter
+    structure = np.ones((3, 3), dtype=np.int)
+    labeled, ncomponents = label(targets, structure)
 
-    blobs = []
-    skip = []
-    max_i = targets.shape[0]
-    max_j = targets.shape[1]
+    assert labeled.shape == targets.shape
+    assert ghs_proj.shape == targets.shape
 
-    def add_around(blob, cell):
-        """
-
-        :param blob:
-        :param cell:
-
-        """
-        blob.append(cell)
-        skip.append(cell)
-
-        for x in range(-1, 2):
-            for y in range(-1, 2):
-                next_i = i + x
-                next_j = j + y
-                next_cell = (next_i, next_j)
-
-                # ensure we're within bounds
-                if next_i >= 0 and next_j >= 0 and next_i < max_i and next_j < max_j:
-                    # ensure we're not looking at same spot or one that's done
-                    if not next_cell == cell and next_cell not in skip:
-                        # if it's an electrified cell
-                        if targets[next_i][next_j] == 1:
-                            blob = add_around(blob, next_cell)
-
-        return blob
-
-    for i in range(max_i):
-        for j in range(max_j):
-            if targets[i][j] == 1 and (i, j) not in skip:
-                blob = add_around(blob=[], cell=(i, j))
-                blobs.append(blob)
-
-    for blob in blobs:
-        found = False
-        for cell in blob:
-            if ghs_proj[cell] > 1:
-                found = True
-                break
-        if not found:
-            # set all values in blob to 0
-            for cell in blob:
-                targets[cell] = 0
+    for c in range(1, ncomponents + 1):
+        connected_targets = np.nonzero(labeled == c)
+        population_values = ghs_proj[connected_targets]
+        population_over_one = np.any(population_values[population_values > 1])
+        if not population_over_one:
+            targets[connected_targets] = 0
 
     return targets
 
