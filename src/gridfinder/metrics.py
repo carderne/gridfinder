@@ -1,11 +1,13 @@
 """ Metrics module implements calculation of confusion matrix given a prediction and ground truth. """
 from typing import Optional, Tuple, List, Callable
+from deprecated import deprecated
 
 import fiona
 
 from affine import Affine
 import numpy as np
 import geopandas as gp
+from sklearn.metrics import confusion_matrix
 
 import rasterio
 from rasterio.enums import Resampling
@@ -17,7 +19,51 @@ from gridfinder._util import clip_line_poly
 from gridfinder.util.raster import get_clipped_data, get_resolution_in_meters
 
 
-def prepare_prediction_for_metrics(
+@deprecated(
+    reason="Function is deprecated and will be removed in the next release 1.3.0"
+    "Use get_binary_arrays to compute y_pred and y_true from the grid finder output.",
+)
+def eval_metrics(
+    ground_truth_lines: gp.GeoDataFrame,
+    raster_guess_reader: rasterio.DatasetReader,
+    cell_size_in_meters: Optional[float] = None,
+    aoi: Optional[gp.GeoDataFrame] = None,
+    metrics: List[Callable] = [confusion_matrix],
+) -> dict:
+    """
+    Calculates sklearn metrics
+    of a grid line prediction based the provided ground truth.
+
+    :param ground_truth_lines: A gp.GeoDataFrame object which contains LineString objects as shapes
+                               representing the grid lines.
+    :param raster_guess_reader: A rasterio.DatasetReader object which contains the raster of predicted grid lines.
+                                Pixel values marked with 1 are considered a prediction of a grid line.
+    :param cell_size_in_meters: The cell_size_in_meters parameter controls the size of one prediction in meters.
+                                E.g. the original raster has a pixel size of 100m x 100m.
+                                A cell_size of 1000m meters means that one prediction
+                                is now the grouping of 100 original pixels.
+                                This is done for both the ground truth raster and the prediction raster.
+                                The down-sampling strategy considers a collection of pixel values as a positive
+                                prediction (value = 1) if at least one pixel in that collection has the value 1.
+    :param aoi: A gp.GeoDataFrame containing exactly one Polygon or Multipolygon marking the area of interest.
+                The CRS is expected to be the same as the raster_guess_readers' CRS.
+    :param metrics: A sklearn.metrics object describing a metric that should be evaluated
+
+    :returns: dictionary of metrics resulting from evaluation
+    """
+    y_pred, y_ture = get_binary_arrays(
+        ground_truth_lines=ground_truth_lines,
+        raster_guess_reader=raster_guess_reader,
+        cell_size_in_meters=cell_size_in_meters,
+        aoi=aoi,
+    )
+    results = {}
+    for metric in metrics:
+        results[metric.__name__] = metric(y_ture, y_pred)
+    return results
+
+
+def get_binary_arrays(
     ground_truth_lines: gp.GeoDataFrame,
     raster_guess_reader: rasterio.DatasetReader,
     cell_size_in_meters: Optional[float] = None,
@@ -40,7 +86,7 @@ def prepare_prediction_for_metrics(
     :param aoi: A gp.GeoDataFrame containing exactly one Polygon or Multipolygon marking the area of interest.
                 The CRS is expected to be the same as the raster_guess_readers' CRS.
 
-    :returns: y_pred, y_true: Two binary 1-D arrays of same length containing.
+    :returns: y_pred, y_true: Two binary 1-D arrays of same length.
     """
     # perform clipping of raster and ground truth in case aoi parameter is provided
     if aoi is not None:
