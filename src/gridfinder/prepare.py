@@ -15,7 +15,7 @@ Functions:
 import os
 from scipy.ndimage import label
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 
 
 import fiona
@@ -25,8 +25,38 @@ import rasterio
 from rasterio import Affine
 from rasterio.features import rasterize
 from rasterio.warp import reproject, Resampling
+from rasterio.merge import merge
 from gridfinder.util.raster import get_clipped_data
 from gridfinder.electrificationfilter import ElectrificationFilter
+
+
+def combine_rasters_into_single_file(
+    rasters: List[Union[str, Path, rasterio.DatasetReader]],
+    output_file: Union[str, Path],
+) -> str:
+    assert len(rasters) > 1, f"Need at least two rasters to combine. Got {len(rasters)}"
+    crs = None
+    for i, raster in enumerate(rasters):
+        if isinstance(raster, (str, Path)):
+            rasters[i] = rasterio.open(raster)
+        crs = rasters[i].crs
+
+    # TODO: Check save_2d_array_as_raster: When trying to save the raster_out array with that function
+    #       there are some transparent pixels (checked in QGIS) which are not present when saving with this method
+    out_raster, out_trans = merge(rasters)
+    out_meta = rasters[0].meta.copy()
+    out_meta.update(
+        {
+            "driver": "GTiff",
+            "height": out_raster.shape[1],
+            "width": out_raster.shape[2],
+            "transform": out_trans,
+            "crs": crs,
+        }
+    )
+    with rasterio.open(output_file, "w", **out_meta) as dest:
+        dest.write(out_raster)
+    return output_file
 
 
 def merge_rasters(folder: Union[str, Path], percentile=70):
