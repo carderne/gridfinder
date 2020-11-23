@@ -14,7 +14,7 @@ from shapely.geometry import LineString, Polygon
 import rasterio.warp
 from sklearn.metrics import confusion_matrix
 
-from gridfinder.metrics import prepare_prediction_for_metrics, _perform_scaling
+from gridfinder.metrics import get_binary_arrays, _perform_scaling
 
 TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
 
@@ -190,7 +190,7 @@ def test_on_confusion_matrix(
     cell_size_in_meters: Optional[int],
     expected_confusion_matrix: np.array,
 ):
-    y_pred, y_true = prepare_prediction_for_metrics(
+    y_pred, y_true = get_binary_arrays(
         ground_truth_lines, raster_guess, cell_size_in_meters
     )
     assert np.array_equal(
@@ -202,7 +202,7 @@ def test_up_sampling_fails(
     correct_guess: rasterio.DatasetReader, ground_truth_lines: gp.GeoDataFrame
 ):
     with pytest.raises(ValueError):
-        prepare_prediction_for_metrics(ground_truth_lines, correct_guess, 0.5)
+        get_binary_arrays(ground_truth_lines, correct_guess, 0.5)
 
 
 @pytest.mark.parametrize(
@@ -219,7 +219,7 @@ def test_aoi_on_confusion_matrix(
     ground_truth_lines: gp.GeoDataFrame,
     expected_confusion_matrix: np.array,
 ):
-    y_pred, y_true = prepare_prediction_for_metrics(
+    y_pred, y_true = get_binary_arrays(
         ground_truth_lines, raster_guess, cell_size_in_meters, aoi=sample_aoi
     )
     assert np.array_equal(
