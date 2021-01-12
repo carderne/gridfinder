@@ -61,9 +61,9 @@ class NightlightFilter(ElectrificationFilter):
         :param data:
         :return:
         """
-        ntl_convolved = signal.convolve2d(data, self.predictor, mode="valid")
-        shape_diff = data.shape[0] - ntl_convolved.shape[0]
-        add_amount = int(shape_diff / 2)
-        padded_convolution = np.pad(ntl_convolved, add_amount, mode="median")
-        ntl_filtered = data - padded_convolution
+        data[data == 0.0] = np.nan
+        ntl_convolved = signal.convolve2d(
+            data, self.predictor, mode="same", boundary="symm"
+        )
+        ntl_filtered = data - ntl_convolved
         return ntl_filtered
