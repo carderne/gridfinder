@@ -61,6 +61,8 @@ class NightlightFilter(ElectrificationFilter):
         :param data:
         :return:
         """
-        ntl_convolved = signal.convolve2d(data, self.predictor, mode="same")
+        ntl_convolved = signal.convolve2d(
+            data, self.predictor, boundary="symm", mode="same"
+        )
         ntl_filtered = data - ntl_convolved
         return ntl_filtered
