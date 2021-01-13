@@ -61,7 +61,6 @@ class NightlightFilter(ElectrificationFilter):
         :param data:
         :return:
         """
-        data[data == 0.0] = np.nan
         ntl_convolved = signal.convolve2d(
             data, self.predictor, mode="same", boundary="symm"
         )
