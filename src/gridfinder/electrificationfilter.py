@@ -4,7 +4,7 @@ import abc
 import numpy as np
 from scipy import signal
 from mullet.filters.models import TorchImageFilter, Conv2dImageFilter
-from torch import Tensor, sub
+from torch import Tensor, sub, add
 
 
 class ElectrificationFilter(metaclass=abc.ABCMeta):
@@ -72,15 +72,16 @@ class NightlightFilter(ElectrificationFilter):
 
 class NightlightTorchFilter(Conv2dImageFilter):
     """
-    Replica of NightlightFilter, except built using PyTorch.
+    Implementation of NightlightFilter in PyTorch.
     """
 
-    def __init__(self, init_weights: np.ndarray, radius=21):
-        super().__init__(radius=radius, bias=False, padding_mode="reflect")
+    def __init__(self, init_weights: np.ndarray, radius=21, bias=False):
+        super().__init__(radius=radius, bias=bias, padding_mode="reflect")
         self._set_weight(init_weights)
 
     def _forward(self, x: Tensor) -> Tensor:
         x = x.unsqueeze(0).unsqueeze(0)
         conv_result = self.conv2(x)
         x = sub(x, conv_result)
+        x = add(x, 0.4)
         return x.squeeze()
