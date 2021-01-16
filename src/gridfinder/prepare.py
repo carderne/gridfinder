@@ -65,7 +65,7 @@ def merge_rasters(file_paths: List[Union[str, Path]], percentile=70):
     Used to remove transient features from time-series data.
 
     :param file_paths: List of paths to raster files that are to be merged.
-    :type file_paths: List[str] or List[Path]
+    :type file_paths: List[str], List[Path]
     :param percentile: Percentile value to use when merging using np.nanpercentile.
         Lower values will result in lower values/brightness. (Default value = 70)
     :type percentile: int, optional (default 70.)
