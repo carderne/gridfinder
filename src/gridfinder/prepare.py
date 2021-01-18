@@ -59,13 +59,13 @@ def combine_rasters_into_single_file(
     return output_file
 
 
-def merge_rasters(folder: Union[str, Path], percentile=70):
+def merge_rasters(file_paths: List[Union[str, Path]], percentile=70):
     """Merge a set of monthly rasters keeping the nth percentile value.
 
     Used to remove transient features from time-series data.
 
-    :param folder: Folder containing rasters to be merged.
-    :type folder: str, Path
+    :param file_paths: List of paths to raster files that are to be merged.
+    :type file_paths: List[str], List[Path]
     :param percentile: Percentile value to use when merging using np.nanpercentile.
         Lower values will result in lower values/brightness. (Default value = 70)
     :type percentile: int, optional (default 70.)
@@ -77,9 +77,9 @@ def merge_rasters(folder: Union[str, Path], percentile=70):
     crs = None
     rasters = []
 
-    for file in os.listdir(folder):
+    for file in file_paths:
         if file.endswith(".tif"):
-            with rasterio.open(os.path.join(folder, file)) as ntl_rd:
+            with rasterio.open(file) as ntl_rd:
                 rasters.append(ntl_rd.read(1))
 
                 if not affine:
