@@ -4,16 +4,14 @@ import abc
 import numpy as np
 from scipy import signal
 from mullet.filters.models import TorchImageFilter, Conv2dImageFilter
-from torch import Tensor, sub, add
+import torch
 from typing import Tuple
 
 
-def get_weights_array(shape: Tuple[int, int], i: int, j: int):
+def get_weights_array(shape: Tuple[int, int]):
     """
     Construct a predictor from the pixel-wise function.
     The predictor is normalized so that and the output is then subtracted from the original image.
-    :param i: row number with respect to predictor height
-    :param j: column number with respect to predictor width
     :param shape: shape of filter
     :return: Numpy array with predictor values
     """
@@ -24,6 +22,9 @@ def get_weights_array(shape: Tuple[int, int], i: int, j: int):
         The goal of this predictor is to find pixels with a higher value than their neighborhood,
         biased towards closer areas. To achieve this bias, a non-linear function is needed,
         and a cubic function was found to achieve better results than a square function.
+
+        :param i: row number with respect to predictor height
+        :param j: column number with respect to predictor width
         """
         d_rows = abs(i - math.floor(shape[0] / 2))
         d_cols = abs(j - math.floor(shape[1] / 2))
@@ -34,7 +35,7 @@ def get_weights_array(shape: Tuple[int, int], i: int, j: int):
         else:
             return 1 / (1 + d / 2) ** 3
 
-    vec_filter_func = np.vectorize(_filter_func())
+    vec_filter_func = np.vectorize(_filter_func)
     ntl_filter = np.fromfunction(vec_filter_func, shape, dtype=float)
     return ntl_filter / ntl_filter.sum()
 
@@ -84,9 +85,9 @@ class NightlightTorchFilter(Conv2dImageFilter):
         self.threshold = threshold
         self._set_weight(init_weights((self.kernel_size, self.kernel_size)))
 
-    def _forward(self, x: Tensor) -> Tensor:
+    def _forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0).unsqueeze(0)
         conv_result = self.conv2(x)
-        x = sub(x, conv_result)
-        x = add(x, self.threshold)
+        x = torch.sub(x, conv_result)
+        x = torch.add(x, self.threshold)
         return x.squeeze()
