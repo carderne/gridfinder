@@ -8,11 +8,11 @@ import torch
 from typing import Tuple
 
 
-def get_weights_array(shape: Tuple[int, int]):
+def get_weights_array(radius: int):
     """
     Construct a predictor from the pixel-wise function.
     The predictor is normalized so that and the output is then subtracted from the original image.
-    :param shape: shape of filter
+    :param radius: radius of quadratic kernel
     :return: Numpy array with predictor values
     """
 
@@ -26,8 +26,8 @@ def get_weights_array(shape: Tuple[int, int]):
         :param i: row number with respect to predictor height
         :param j: column number with respect to predictor width
         """
-        d_rows = abs(i - math.floor(shape[0] / 2))
-        d_cols = abs(j - math.floor(shape[1] / 2))
+        d_rows = abs(i - math.floor(kernel_size / 2))
+        d_cols = abs(j - math.floor(kernel_size / 2))
         d = sqrt(d_rows ** 2 + d_cols ** 2)
 
         if d == 0:
@@ -36,6 +36,8 @@ def get_weights_array(shape: Tuple[int, int]):
             return 1 / (1 + d / 2) ** 3
 
     vec_filter_func = np.vectorize(_filter_func)
+    kernel_size = 2 * radius - 1
+    shape = (kernel_size, kernel_size)
     ntl_filter = np.fromfunction(vec_filter_func, shape, dtype=float)
     return ntl_filter / ntl_filter.sum()
 
@@ -53,12 +55,13 @@ class NightlightFilter(ElectrificationFilter):
     """The electrification_predictor that was used in this Nature paper:
     https://www.nature.com/articles/s41597-019-0347-4"""
 
-    def __init__(self, shape=(41, 41)):
+    def __init__(self, radius=21):
         """
-        :param shape: Shape of predictor, e.g. (2,2)
+        :param shape: Radius of square filter
+        :type shape: int
         """
-        self.shape = shape
-        self.predictor = get_weights_array(shape)
+        self.radius = radius
+        self.predictor = get_weights_array(self.radius)
 
     def predict(self, data: np.ndarray):
         """
@@ -83,7 +86,7 @@ class NightlightTorchFilter(Conv2dImageFilter):
     ):
         super().__init__(radius=radius, bias=bias, padding_mode="reflect")
         self.threshold = threshold
-        self._set_weight(init_weights((self.kernel_size, self.kernel_size)))
+        self._set_weight(init_weights(self.radius))
 
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0).unsqueeze(0)
