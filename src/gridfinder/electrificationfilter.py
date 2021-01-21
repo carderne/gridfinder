@@ -5,10 +5,11 @@ import numpy as np
 from scipy import signal
 from mullet.filters.models import TorchImageFilter, Conv2dImageFilter
 import torch
+import torch.nn as nn
 from typing import Tuple
 
 
-def get_weights_array(radius: int):
+def get_weights_array(radius: int) -> np.ndarray:
     """
     Construct a predictor from the pixel-wise function.
     The predictor is normalized so that and the output is then subtracted from the original image.
@@ -16,7 +17,7 @@ def get_weights_array(radius: int):
     :return: Numpy array with predictor values
     """
 
-    def _filter_func(i: int, j: int):
+    def _filter_func(i: int, j: int) -> float:
         """
         d is that pixel’s perpendicular distance from a given square sample’s centroid.
         The goal of this predictor is to find pixels with a higher value than their neighborhood,
@@ -86,11 +87,13 @@ class NightlightTorchFilter(Conv2dImageFilter):
     ):
         super().__init__(radius=radius, bias=bias, padding_mode="reflect")
         self.threshold = threshold
-        self._set_weight(init_weights(self.radius))
+        filter_weights = init_weights(self.radius)
+        input_data_weights = np.zeros(shape=filter_weights.shape)
+        input_data_weights[radius - 1, radius - 1] = 1.0
+        self._set_weight(input_data_weights - filter_weights)
+        self.conv2.bias = nn.Parameter(torch.Tensor([threshold]).to(self.device))
 
     def _forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x.unsqueeze(0).unsqueeze(0)
         conv_result = self.conv2(x)
-        x = torch.sub(x, conv_result)
-        x = torch.add(x, self.threshold)
-        return x.squeeze()
+        return conv_result.squeeze()
