@@ -183,7 +183,6 @@ update_tox_cache:
     <<: *global_cache
     policy: push
   stage: update-tox-cache
-  image: "google/cloud-sdk"
   script:
     - apt-get install apt-transport-https ca-certificates gnupg -y
     - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -201,5 +200,5 @@ update_tox_cache:
     - head -8 tmp.txt > ~/.pypirc
     - mkdir -p ~/.config/pip
     - tail -5 tmp.txt > ~/.config/pip/pip.conf
-    
+
     - tox -r
