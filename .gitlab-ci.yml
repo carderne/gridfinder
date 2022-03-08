@@ -74,7 +74,22 @@ tox_use_cache:
     policy: pull
   stage: tox
   script:
+    - apt-get install apt-transport-https ca-certificates gnupg -y
+    - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    - apt-get update && apt-get install -y google-cloud-sdk
+
     - pip install tox
+
+    - pip install keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
     - tox
   artifacts:
     paths:
