@@ -135,7 +135,7 @@ def partially_correct_guess_but_shifted_left(raster_saver) -> str:
 
 @pytest.fixture()
 def raster_saver(tmpdir_factory):
-    """ Saves Raster as TIF file"""
+    """Saves Raster as TIF file"""
 
     def _raster_saver(raster: np.array, file_name: str):
         tmp_folder = tmpdir_factory.mktemp("tmp_raster")
