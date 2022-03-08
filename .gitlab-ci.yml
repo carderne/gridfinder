@@ -49,7 +49,8 @@ tox_recreate:
     - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
     - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
     - head -8 tmp.txt > ~/.pypirc
-    - tail -5 tmp.txt > .venv/pip.conf
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
 
     - tox -r
   artifacts:
@@ -159,7 +160,8 @@ publish_python_package:
     - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
     - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
     - head -8 tmp.txt > ~/.pypirc
-    - tail -5 tmp.txt > .venv/pip.conf
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
 
     - twine upload --repository-url https://europe-west3-python.pkg.dev/village-data-analytics/vida-python-registry/ --skip-existing dist/* --verbose
 
