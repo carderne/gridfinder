@@ -39,7 +39,23 @@ tox_recreate:
     policy: push
   stage: tox
   script:
+    - apt-get install apt-transport-https ca-certificates gnupg -y
+    - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    - apt-get update && apt-get install -y google-cloud-sdk
+
     - pip install tox
+
+    - pip install keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
+
     - tox -r
   artifacts:
     paths:
@@ -58,7 +74,22 @@ tox_use_cache:
     policy: pull
   stage: tox
   script:
+    - apt-get install apt-transport-https ca-certificates gnupg -y
+    - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    - apt-get update && apt-get install -y google-cloud-sdk
+
     - pip install tox
+
+    - pip install keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
     - tox
   artifacts:
     paths:
@@ -80,6 +111,9 @@ pages:
   only:
     - develop
 
+
+# <--- BEGIN GCP ARTIFACT - PYTHON --->
+
 package:
   cache:
     paths:
@@ -92,20 +126,37 @@ package:
       # Bump version number of develop branch
       if [ "$CI_COMMIT_BRANCH" = "develop" ]; then
         # Git config
-        git config user.name "Gitlab CI"
-        git config user.email "gitlab@gitlab.aai.lab"
-        chown 0600 $GITLAB_DEPLOY_KEY
+        git config user.name "Igor Ginoski"
+        git config user.email "igor.ginoski@intertec.io"
+
+        mkdir ~/.ssh
+        touch ~/.ssh/id_rsa
+        touch ~/.ssh/id_rsa.pub
+
+        echo $GITLAB_DEPLOY_KEY | base64 -d > ~/.ssh/id_rsa
+        echo $GITLAB_DEPLOY_PUBLIC_KEY | base64 -d > ~/.ssh/id_rsa.pub
+        chmod 0600 ~/.ssh/id_rsa
+        chmod 0644 ~/.ssh/id_rsa.pub
+
+        ls -l ~/.ssh/
 
         # HTTPS clone URL -> git+ssh URL for pushing
+
         export GIT_REPO_URL_SSH=$(echo -n $CI_REPOSITORY_URL | sed -r 's%https?://.*@([^/]+)/%git@\1:%' -)
+        
         git remote set-url origin $GIT_REPO_URL_SSH
-        export GIT_SSH_COMMAND='ssh -i $GITLAB_DEPLOY_KEY -o IdentitiesOnly=yes -o StrictHostKeyChecking=no'
 
+        export GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no'
+
+
+        echo "install bump2version"
         pip install bump2version
-        apt-get update && apt-get -yq -o dir::cache::archives="$(pwd)/apt-cache" install git-lfs
 
+        echo "run bump2version"
         bump2version build --commit
-        git push -o ci.skip origin HEAD:develop
+
+        echo "push new version"
+        GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git push -o ci.skip origin HEAD:develop
       fi
     - pip install setuptools wheel
     - python setup.py sdist bdist_wheel
@@ -114,19 +165,27 @@ package:
       - dist/*.tar.gz
       - dist/*.whl
 
-publish_package:
-  cache: {}
-  only:
-    - tags
-    - develop
+
+publish_python_package:
   stage: publish
+  image: google/cloud-sdk
   needs: [package]
   script:
-    - pip install twine
-    - export TWINE_REPOSITORY_URL=$PYPI_REPO_URL
-    - export TWINE_USERNAME=$PYPI_REPO_USER
-    - export TWINE_PASSWORD=$PYPI_REPO_PASS
-    - twine upload dist/*
+    # keyrings needed for authentication with GCP
+    - pip install twine keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
+
+    - twine upload --repository-url https://europe-west3-python.pkg.dev/village-data-analytics/vida-python-registry/ --skip-existing dist/* --verbose
+
+# <--- END GCP ARTIFACT - PYTHON --->
+
 
 update_tox_cache:
   needs: []
@@ -140,5 +199,21 @@ update_tox_cache:
     policy: push
   stage: update-tox-cache
   script:
+    - apt-get install apt-transport-https ca-certificates gnupg -y
+    - echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+    - curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    - apt-get update && apt-get install -y google-cloud-sdk
+
     - pip install tox
+
+    - pip install keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - mkdir -p ~/.config/pip
+    - tail -5 tmp.txt > ~/.config/pip/pip.conf
+
     - tox -r

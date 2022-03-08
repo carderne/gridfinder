@@ -32,7 +32,7 @@ def default_nightlight_target_filter(radius: int) -> np.ndarray:
         """
         d_rows = abs(i - math.floor(kernel_size / 2))
         d_cols = abs(j - math.floor(kernel_size / 2))
-        d = sqrt(d_rows ** 2 + d_cols ** 2)
+        d = sqrt(d_rows**2 + d_cols**2)
 
         if d == 0:
             return 0.0
