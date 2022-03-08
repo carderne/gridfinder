@@ -38,8 +38,19 @@ tox_recreate:
     <<: *global_cache
     policy: push
   stage: tox
+  image: "google/cloud-sdk"
   script:
     - pip install tox
+
+    - pip install keyrings.google-artifactregistry-auth
+    - echo $SERVICE_ACCOUNT | base64 -d > service-account.json
+
+    - export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+    - gcloud auth activate-service-account --project=village-data-analytics --key-file=service-account.json
+    - gcloud artifacts print-settings python --repository=vida-python-registry --location=europe-west3 > tmp.txt
+    - head -8 tmp.txt > ~/.pypirc
+    - tail -5 tmp.txt > .venv/pip.conf
+
     - tox -r
   artifacts:
     paths:
@@ -166,6 +177,7 @@ update_tox_cache:
     <<: *global_cache
     policy: push
   stage: update-tox-cache
+  image: "google/cloud-sdk"
   script:
     - pip install tox
     - tox -r
