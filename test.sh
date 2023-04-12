@@ -1,4 +1,3 @@
-# test.sh
 #!/bin/bash
 
 # clean output folder
@@ -11,11 +10,5 @@ python -m jupyter nbconvert --to script example.ipynb
 sed -i -e 's/jupyter=True/jupyter=False/g' example.py
 sed -i -e 's/plt.imshow(.*)//g' example.py
 
-# activate virtualenv if present but continue anyway
-source /home/chris/.envs/gridfinder/bin/activate || true
-
 # run script
 python example.py
-
-# clean up
-rm example.py
