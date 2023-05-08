@@ -1,8 +1,6 @@
-# gridfinder
+# Gridlight
 
 gridfinder uses night-time lights imagery to as an indicator of settlements/towns with grid electricity access. Then a minimum spanning tree is calculated for these connect points, using a many-to-many variant Dijkstra algorithm and using existing road networks as a cost function. Adapted from [this work from Facebook](https://github.com/facebookresearch/many-to-many-dijkstra). Currently gridfinder only uses road networks, but it would be trivial to add other cost parameters such as slope or terrain.
-
-Documentation is available [here](http://customers.pages.aai.lab/tfe/vida/gridfinder/docs/).
 
 The algorithm looks as follows in process, guessing the grid network for Uganda:
 
@@ -39,36 +37,6 @@ These additional packages may be necessary depending on your configuration:
  - `matplotlib`
  - `seaborn`
  - `folium`
-
-### Configuring the appliedAI Nexus repo
-
-The `data_access` dependency is hosted in a private PyPI repository, which needs
-to be made known to `pip` in order to be used as a source.
-
-If you are using a plain virtualenv in `venv`, add the following lines to `venv/pip.conf`,
-otherwise you can add them to your system-wide pip configuration in `~/.pip/pip.conf`:
-
-```ini
-[global]
-extra-index-url = https://nexus.admin.aai.sh/repository/aai-pypi/simple
-```
-
-Alternatively, these options can also be directly passed to
-pip on the command line or through env vars (e.g. in CI builds)
-Make sure to use the version for the `data_access` library specified in the requirements.txt file:
-
-```shell script
-$ pip install data_access==vv.vv \
-    --extra-index-url https://nexus.admin.aai.sh/repository/aai-pypi/simple
-```
-
-or
-
-```shell script
-export PIP_EXTRA_INDEX_URL=https://nexus.admin.aai.sh/repository/aai-pypi/simple
-pip install tfe_clustering==vv.vv
-``` 
-
 
 ### Install with pip
 
