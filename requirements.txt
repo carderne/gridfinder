@@ -1,4 +1,3 @@
---extra-index-url https://europe-west3-python.pkg.dev/village-data-analytics/vida-python-registry/simple/
 affine
 branca
 Click
