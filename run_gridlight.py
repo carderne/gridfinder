@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+import pandas as pd
 
 import click
 import geopandas as gpd
@@ -48,14 +49,14 @@ from src.gridlight.util.remote_storage import get_default_remote_storage, get_de
 )
 @click.option(
     "--start-date",
-    type=click.DateTime(formats=["%Y-%m-%d", "%y%m%d"]),
-    default="2019-01-01",
+    type=click.DateTime(formats=["%Y-%m", "%y%m"]),
+    default="2013-09",
     help="Start date of the range defining the nightlight files which shall be used. Note: If you want to include the first month, type YYYY-MM-01.",
 )
 @click.option(
     "--end-date",
-    type=click.DateTime(formats=["%Y-%m-%d", "%y%m%d"]),
-    default="2019-12-31",
+    type=click.DateTime(formats=["%Y-%m", "%y%m"]),
+    default="2013-09",
     help="End date of the range defining the nightlight files which shall be used. Note: The month you specfy here will be included, irrespective of the date.",
 )
 @click.option(
@@ -63,8 +64,8 @@ from src.gridlight.util.remote_storage import get_default_remote_storage, get_de
     help="Path to vector file containing power lines, relative to data/processed/ directory",
 )
 @click.option(
-    "--nightlight-output",
-    default="nigeria/ntl_nigeria_clipped",
+    "--result-subfolder",
+    default="nigeria",
     help="Path to directory where clipped nightlight imagery will be stored,"
     "relative to data/processed directory.",
 )
@@ -72,7 +73,7 @@ from src.gridlight.util.remote_storage import get_default_remote_storage, get_de
     "--dev-mode",
     is_flag=True,
     help="Whether to run the script in dev mode. "
-    "If true, the results will be pushed to the development database",
+    "If true, the results will be taken from the configured development bucket",
 )
 def run_gridfinder(
     area_of_interest_data: str,
@@ -83,7 +84,7 @@ def run_gridfinder(
     start_date: datetime.date,
     end_date: datetime.date,
     power_data: str,
-    nightlight_output: str,
+    result_subfolder: str,
     dev_mode: bool,
 ):
     DEFAULT_CRS = "EPSG:4326"
@@ -95,9 +96,17 @@ def run_gridfinder(
     else:
         remote_storage = get_default_remote_storage()
 
-    input_files["folder_ntl_in"] = c.datafile_path(
-        nightlight_data, stage=c.RAW, check_existence=False, relative=True
-    )
+    ntl_monthly_dates = pd.date_range(start=start_date, end=end_date, freq='MS')
+    all_ntl_input_monthly_filenames = [f"{date.strftime('%Y%m')}.tgz" for date in ntl_monthly_dates]
+
+    all_ntl_input_monthly_full_paths = [c.datafile_path(f"{nightlight_data}/{ntl_filename}",
+                         stage=c.RAW, check_existence=False, relative=True)
+     for ntl_filename in all_ntl_input_monthly_filenames]
+
+    for path in all_ntl_input_monthly_full_paths:
+        log.info(f"Pulling nightlight imagery file {path} from storage.")
+        remote_storage.pull(path, "")
+
     input_files["aoi_in"] = c.datafile_path(
         area_of_interest_data,
         stage=c.GROUND_TRUTH,
@@ -117,33 +126,40 @@ def run_gridfinder(
         input_files["power"] = c.datafile_path(
             power_data, stage=c.PROCESSED, check_existence=False, relative=True
         )
+
     for _, path in input_files.items():
+        log.info(f"Pulling file {path} from storage.")
         remote_storage.pull(path, "")
+
+    # Define output paths
+    ELECTRIFICATION_TARGET_PATH = f"{result_subfolder}/electrification_targets"
+    CLIPPED_NTL_PATH = f"{result_subfolder}/ntl_clipped"
+    PREDICTIONS_PATH = f"{result_subfolder}/predictions/"
     folder_ntl_out = c.datafile_path(
-        nightlight_output, stage=c.PROCESSED, check_existence=False
+        CLIPPED_NTL_PATH, stage=c.PROCESSED, check_existence=False
     )
     raster_merged_out = c.datafile_path(
-        "ntl_merged.tif", stage=c.PROCESSED, check_existence=False
+        f"{result_subfolder}/ntl_merged.tif", stage=c.PROCESSED, check_existence=False
     )
     targets_out = c.datafile_path(
-        "targets.tif", stage=c.PROCESSED, check_existence=False
+        f"{ELECTRIFICATION_TARGET_PATH}/targets.tif", stage=c.PROCESSED, check_existence=False
     )
     targets_clean_out = c.datafile_path(
-        "targets_clean.tif", stage=c.CLEANED, check_existence=False
+        f"{ELECTRIFICATION_TARGET_PATH}/targets_clean.tif", stage=c.CLEANED, check_existence=False
     )
-    roads_out = c.datafile_path("roads.tif", stage=c.PROCESSED, check_existence=False)
+    roads_out = c.datafile_path(f"{result_subfolder}/roads_clipped.tif", stage=c.PROCESSED, check_existence=False)
 
     dist_out = c.datafile_path(
-        "nigeria_dist.tif", stage=c.PROCESSED, check_existence=False
+        f"{PREDICTIONS_PATH}/dist.tif", stage=c.PROCESSED, check_existence=False
     )
-    guess_out = c.datafile_path("guess.tif", stage=c.PROCESSED, check_existence=False)
+    guess_out = c.datafile_path(f"{result_subfolder}/predictions/MV_grid_prediction.tif", stage=c.PROCESSED, check_existence=False)
     guess_skeletonized_out = c.datafile_path(
-        "guess_skel.tif", stage=c.PROCESSED, check_existence=False
+        f"{PREDICTIONS_PATH}/MV_grid_prediction_skeleton.tif", stage=c.PROCESSED, check_existence=False
     )
     guess_vec_out = c.datafile_path(
-        "guess.gpkg", stage=c.PROCESSED, check_existence=False
+        f"{PREDICTIONS_PATH}/MV_grid_prediction", stage=c.PROCESSED, check_existence=False
     )
-    animate_out = os.path.join(c.visualizations, "guess.tif")
+    animate_out = os.path.join(c.visualizations, f"{result_subfolder}/predictions/guess_animate.tif")
 
     params = {
         "percentile": 70,
@@ -154,18 +170,12 @@ def run_gridfinder(
         "end_date": end_date.strftime("%Y-%m-%d"),
     }
 
-    ntl_files_basedir = input_files["folder_ntl_in"]
     aoi = gpd.read_file(input_files["aoi_in"])
 
-    all_ntl_files = [
-        ntl_file
-        for ntl_file in os.listdir(ntl_files_basedir)
-        if start_date <= datetime.strptime(ntl_file[:-4], "%Y%m") <= end_date
-    ]
+    log.info(f"Preprocess raw nightlight images.")
 
     output_paths = []
-    for ntl_file in all_ntl_files:
-        full_path = os.path.join(ntl_files_basedir, ntl_file)
+    for ntl_file, full_path in zip(all_ntl_input_monthly_filenames, all_ntl_input_monthly_full_paths):
         output_paths.append(
             os.path.join(folder_ntl_out, f"{ntl_file[:-4]}.tif")
         )  # stripping off the .tgz
@@ -241,12 +251,13 @@ def run_gridfinder(
     guess_gdf = raster_to_lines(guess_skel, affine, DEFAULT_CRS)
     if power_data is not None:
         guess_gdf.append(power)
-    guess_gdf.to_file(guess_vec_out, driver="GPKG")
+    guess_gdf.to_file(f"{guess_vec_out}.gpkg", driver="GPKG")
+    guess_gdf.to_file(f"{guess_vec_out}.geojson", driver="GeoJSON")
+
     log.info(
         f"Converted raster to {len(guess_gdf)} grid lines and saved to "
         f"{guess_vec_out}. Evaluating on ground truth now.."
     )
-
 
     truth = gpd.read_file(input_files["grid_truth"]).to_crs(DEFAULT_CRS)
     true_pos, false_neg = accuracy(truth, guess_out, aoi)
