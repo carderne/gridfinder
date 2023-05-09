@@ -4,21 +4,26 @@ import logging
 import os
 import sys
 from datetime import datetime
-import pandas as pd
 
 import click
 import geopandas as gpd
 import numpy as np
+import pandas as pd
+
 from src.gridlight.electrificationfilter import NightlightFilter
-from src.gridlight.gridlight import estimate_mem_use, get_targets_costs, optimise
-from src.gridlight.post import accuracy, raster_to_lines, thin, threshold_distances
-from src.gridlight.prepare import drop_zero_pop, merge_rasters, prepare_ntl, prepare_roads
+from src.gridlight.gridlight import (estimate_mem_use, get_targets_costs,
+                                     optimise)
+from src.gridlight.post import (accuracy, raster_to_lines, thin,
+                                threshold_distances)
+from src.gridlight.prepare import (drop_zero_pop, merge_rasters, prepare_ntl,
+                                   prepare_roads)
 from src.gridlight.util.loading import open_raster_in_tar
 from src.gridlight.util.raster import get_clipped_data, save_2d_array_as_raster
 
 sys.path.append(os.path.abspath("."))
 from config import get_config
-from src.gridlight.util.remote_storage import get_default_remote_storage, get_develop_remote_storage
+from src.gridlight.util.remote_storage import (get_default_remote_storage,
+                                               get_develop_remote_storage)
 
 
 @click.command()
@@ -96,12 +101,20 @@ def run_gridfinder(
     else:
         remote_storage = get_default_remote_storage()
 
-    ntl_monthly_dates = pd.date_range(start=start_date, end=end_date, freq='MS')
-    all_ntl_input_monthly_filenames = [f"{date.strftime('%Y%m')}.tgz" for date in ntl_monthly_dates]
+    ntl_monthly_dates = pd.date_range(start=start_date, end=end_date, freq="MS")
+    all_ntl_input_monthly_filenames = [
+        f"{date.strftime('%Y%m')}.tgz" for date in ntl_monthly_dates
+    ]
 
-    all_ntl_input_monthly_full_paths = [c.datafile_path(f"{nightlight_data}/{ntl_filename}",
-                         stage=c.RAW, check_existence=False, relative=True)
-     for ntl_filename in all_ntl_input_monthly_filenames]
+    all_ntl_input_monthly_full_paths = [
+        c.datafile_path(
+            f"{nightlight_data}/{ntl_filename}",
+            stage=c.RAW,
+            check_existence=False,
+            relative=True,
+        )
+        for ntl_filename in all_ntl_input_monthly_filenames
+    ]
 
     for path in all_ntl_input_monthly_full_paths:
         log.info(f"Pulling nightlight imagery file {path} from storage.")
@@ -142,24 +155,42 @@ def run_gridfinder(
         f"{result_subfolder}/ntl_merged.tif", stage=c.PROCESSED, check_existence=False
     )
     targets_out = c.datafile_path(
-        f"{ELECTRIFICATION_TARGET_PATH}/targets.tif", stage=c.PROCESSED, check_existence=False
+        f"{ELECTRIFICATION_TARGET_PATH}/targets.tif",
+        stage=c.PROCESSED,
+        check_existence=False,
     )
     targets_clean_out = c.datafile_path(
-        f"{ELECTRIFICATION_TARGET_PATH}/targets_clean.tif", stage=c.CLEANED, check_existence=False
+        f"{ELECTRIFICATION_TARGET_PATH}/targets_clean.tif",
+        stage=c.CLEANED,
+        check_existence=False,
     )
-    roads_out = c.datafile_path(f"{result_subfolder}/roads_clipped.tif", stage=c.PROCESSED, check_existence=False)
+    roads_out = c.datafile_path(
+        f"{result_subfolder}/roads_clipped.tif",
+        stage=c.PROCESSED,
+        check_existence=False,
+    )
 
     dist_out = c.datafile_path(
         f"{PREDICTIONS_PATH}/dist.tif", stage=c.PROCESSED, check_existence=False
     )
-    guess_out = c.datafile_path(f"{result_subfolder}/predictions/MV_grid_prediction.tif", stage=c.PROCESSED, check_existence=False)
+    guess_out = c.datafile_path(
+        f"{result_subfolder}/predictions/MV_grid_prediction.tif",
+        stage=c.PROCESSED,
+        check_existence=False,
+    )
     guess_skeletonized_out = c.datafile_path(
-        f"{PREDICTIONS_PATH}/MV_grid_prediction_skeleton.tif", stage=c.PROCESSED, check_existence=False
+        f"{PREDICTIONS_PATH}/MV_grid_prediction_skeleton.tif",
+        stage=c.PROCESSED,
+        check_existence=False,
     )
     guess_vec_out = c.datafile_path(
-        f"{PREDICTIONS_PATH}/MV_grid_prediction", stage=c.PROCESSED, check_existence=False
+        f"{PREDICTIONS_PATH}/MV_grid_prediction",
+        stage=c.PROCESSED,
+        check_existence=False,
     )
-    animate_out = os.path.join(c.visualizations, f"{result_subfolder}/predictions/guess_animate.tif")
+    animate_out = os.path.join(
+        c.visualizations, f"{result_subfolder}/predictions/guess_animate.tif"
+    )
 
     params = {
         "percentile": 70,
@@ -175,7 +206,9 @@ def run_gridfinder(
     log.info(f"Preprocess raw nightlight images.")
 
     output_paths = []
-    for ntl_file, full_path in zip(all_ntl_input_monthly_filenames, all_ntl_input_monthly_full_paths):
+    for ntl_file, full_path in zip(
+        all_ntl_input_monthly_filenames, all_ntl_input_monthly_full_paths
+    ):
         output_paths.append(
             os.path.join(folder_ntl_out, f"{ntl_file[:-4]}.tif")
         )  # stripping off the .tgz
@@ -231,7 +264,7 @@ def run_gridfinder(
         costs,
         start,
         jupyter=False,
-        animate=False,
+        animate=True,
         affine=affine,
         animate_path=animate_out,
     )
@@ -240,7 +273,6 @@ def run_gridfinder(
     guess = threshold_distances(dist, threshold=params["cutoff"])
     save_2d_array_as_raster(guess_out, guess, affine, DEFAULT_CRS)
     log.info(f"Prediction is completed and saved to {guess_out}, thinning raster now..")
-
 
     guess_skel = thin(guess)
     save_2d_array_as_raster(guess_skeletonized_out, guess_skel, affine, DEFAULT_CRS)
