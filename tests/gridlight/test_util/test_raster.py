@@ -8,7 +8,7 @@ import rasterio
 from rasterio import DatasetReader
 from shapely.geometry import Point, Polygon, MultiPolygon
 
-from gridfinder.util.raster import save_2d_array_as_raster, get_clipped_data
+from src.gridlight.util.raster import save_2d_array_as_raster, get_clipped_data
 
 
 @pytest.fixture()
