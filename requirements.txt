@@ -7,10 +7,15 @@ folium
 geopandas
 ipython
 matplotlib
+python-keycloak
+cryptography
+beautifulsoup4
 numpy
+tqdm
 pandas
 Pillow
 pyproj
+accsr==0.3.4
 pytz
 rasterio
 Rtree
@@ -20,4 +25,3 @@ seaborn
 Shapely
 deprecated
 scikit-learn
-mullet==0.1.5.dev10

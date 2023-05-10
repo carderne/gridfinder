@@ -8,8 +8,6 @@ from rasterio import DatasetReader
 
 log = logging.getLogger(__name__)
 
-
-# TODO: remove this once we have separated these utils from the scripts repo
 @contextmanager
 def open_file_in_tar(
     path: str, file_name: str = None, file_index: int = None

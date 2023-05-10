@@ -26,8 +26,8 @@ from rasterio import Affine
 from rasterio.features import rasterize
 from rasterio.warp import reproject, Resampling
 from rasterio.merge import merge
-from gridfinder.util.raster import get_clipped_data
-from gridfinder.electrificationfilter import ElectrificationFilter
+from src.gridlight.util.raster import get_clipped_data
+from src.gridlight.electrificationfilter import ElectrificationFilter
 
 
 def combine_rasters_into_single_file(
@@ -211,7 +211,7 @@ def drop_zero_pop(
         )
 
     # neighbourhood filter
-    structure = np.ones((3, 3), dtype=np.int)
+    structure = np.ones((3, 3), dtype=int)
     labeled, ncomponents = label(targets, structure)
 
     assert labeled.shape == targets.shape

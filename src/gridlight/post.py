@@ -25,7 +25,7 @@ import rasterio
 from rasterio.features import rasterize
 from rasterio.transform import xy
 
-from gridfinder._util import clip_line_poly
+from src.gridlight._util import clip_line_poly
 
 
 def _read_raster(

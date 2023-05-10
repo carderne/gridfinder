@@ -8,11 +8,11 @@ from typing import Callable, List, Optional, Union
 
 import click
 from accsr.remote_storage import RemoteStorage
-from gridfinder.prepare import combine_rasters_into_single_file
+from src.gridlight.prepare import combine_rasters_into_single_file
 
 from config import get_config
-from util.loading import open_raster_in_tar
-from util.viirs import download_viirs_imagery
+from src.gridlight.util.loading import open_raster_in_tar
+from src.gridlight.util.viirs import download_viirs_imagery
 
 log = logging.getLogger(__name__)
 

@@ -15,8 +15,8 @@ import rasterio.warp
 from rasterio.warp import reproject
 from rasterio.features import rasterize
 
-from gridfinder._util import clip_line_poly
-from gridfinder.util.raster import get_clipped_data, get_resolution_in_meters
+from gridlight._util import clip_line_poly
+from gridlight.util.raster import get_clipped_data, get_resolution_in_meters
 
 
 @deprecated(

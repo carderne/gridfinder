@@ -17,9 +17,10 @@ from math import sqrt
 import numpy as np
 import rasterio
 from IPython.display import display, Markdown
+import tqdm
 
-from gridlight.constants import CRS
-from gridlight.util.raster import save_2d_array_as_raster
+from src.gridlight.constants import CRS
+from src.gridlight.util.raster import save_2d_array_as_raster
 
 sys.setrecursionlimit(100000)
 
