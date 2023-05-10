@@ -52,8 +52,9 @@ class ViirsAuthenticator:
     using the http request header field `Authorization`.
     """
 
+    # Source: https://eogdata.mines.edu/products/register/
     CLIENT_ID = "eogdata_oidc"
-    CLIENT_SECRET_KEY = "368127b1-1ee0-4f3f-8429-29e9a93daf9a"
+    CLIENT_SECRET_KEY = "2677ad81-521b-4869-8480-6d05b9e57d48"
     AUTH_SERVER_URL = "https://eogauth.mines.edu/auth/"
     AUTH_REALM_NAME = "master"
 
