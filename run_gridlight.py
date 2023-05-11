@@ -55,13 +55,13 @@ from src.gridlight.util.remote_storage import (get_default_remote_storage,
 @click.option(
     "--start-date",
     type=click.DateTime(formats=["%Y-%m", "%y%m"]),
-    default="2013-09",
+    default="2021-01",
     help="Start date of the range defining the nightlight files which shall be used. Note: If you want to include the first month, type YYYY-MM-01.",
 )
 @click.option(
     "--end-date",
     type=click.DateTime(formats=["%Y-%m", "%y%m"]),
-    default="2013-09",
+    default="2021-12",
     help="End date of the range defining the nightlight files which shall be used. Note: The month you specfy here will be included, irrespective of the date.",
 )
 @click.option(
