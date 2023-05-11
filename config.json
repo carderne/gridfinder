@@ -3,32 +3,25 @@
   "data_cleaned": "./data/cleaned",
   "data_processed": "./data/processed",
   "data_ground_truth": "./data/ground_truth",
-  "visualizations": "./data/visualizations",
   "artifacts": "./data/artifacts",
   "temp": "./temp",
   "data": "./data",
-  "db_config": {
-    "name": "vida",
-    "host": null,
-    "pw": null,
-    "user": "geoserver",
-    "port": 5432,
-    "log_statements": false
-  },
-  "db_config_dev": {
-    "name": "vida_dev",
-    "host": null,
-    "pw": null,
-    "user": "tester",
-    "port": 5432,
-    "log_statements": true
-  },
   "remote_storage_config": {
-    "key": "vida-staging@appliedai-vida.iam.gserviceaccount.com",
-    "secret": null,
-    "bucket": "vida-staging",
-    "base_path": "vida",
+    "key": "",
+    "secret": "",
+    "bucket": "",
+    "base_path": "",
     "provider": "google_storage"
   },
-  "data_prefix": "vida/data"
+  "dev_remote_storage_config": {
+    "key": "",
+    "secret": "",
+    "bucket": "",
+    "base_path": "",
+    "provider": "google_storage"
+    },
+  "viirs_repo_access": {
+    "username": null,
+    "password": null
+  }
 }

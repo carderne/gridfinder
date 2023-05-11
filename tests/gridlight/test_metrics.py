@@ -14,7 +14,7 @@ from shapely.geometry import LineString, Polygon
 import rasterio.warp
 from sklearn.metrics import confusion_matrix
 
-from gridfinder.metrics import get_binary_arrays, _perform_scaling
+from src.gridlight.metrics import get_binary_arrays, _perform_scaling
 
 TRANSFORM = Affine(1 + 1e-10, 0.0, 0.0, 0.0, 1 + 1e-10, 0.0)
 

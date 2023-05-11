@@ -3,11 +3,6 @@ from math import sqrt
 import abc
 import numpy as np
 from scipy import signal
-from mullet.filters.models import TorchImageFilter, Conv2dImageFilter
-import torch
-import torch.nn as nn
-from typing import Tuple
-
 
 def default_nightlight_target_filter(radius: int) -> np.ndarray:
     """
@@ -82,21 +77,3 @@ class NightlightFilter(ElectrificationFilter):
             data, self.predictor, mode="same", boundary="symm"
         )
         return prediction
-
-
-class NightlightTorchFilter(Conv2dImageFilter):
-    """
-    Implementation of NightlightFilter in PyTorch.
-    """
-
-    def __init__(self, radius=21, bias=False, threshold=0.4):
-        super().__init__(radius=radius, bias=bias, padding_mode="reflect")
-        self.threshold = threshold
-        filter_weights = default_nightlight_target_filter(self.radius)
-        self._set_weight(filter_weights)
-        self.conv2.bias = nn.Parameter(torch.Tensor([threshold]).to(self.device))
-
-    def _forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x.unsqueeze(0).unsqueeze(0)
-        prediction = self.conv2(x)
-        return prediction.squeeze()

@@ -1,6 +1,6 @@
 import pytest
 from numpy.testing import assert_array_equal
-from gridfinder.post import threshold_distances
+from src.gridlight.post import threshold_distances
 import numpy as np
 
 
