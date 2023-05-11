@@ -188,9 +188,6 @@ def run_gridfinder(
         stage=c.PROCESSED,
         check_existence=False,
     )
-    animate_out = os.path.join(
-        c.visualizations, f"{result_subfolder}/predictions/guess_animate.tif"
-    )
 
     params = {
         "percentile": 70,
@@ -212,7 +209,7 @@ def run_gridfinder(
         output_paths.append(
             os.path.join(folder_ntl_out, f"{ntl_file[:-4]}.tif")
         )  # stripping off the .tgz
-        with open_raster_in_tar(full_path, file_index=1) as raster:
+        with open_raster_in_tar(full_path) as raster:
             clipped_data, transform = get_clipped_data(raster, aoi, nodata=np.nan)
             save_2d_array_as_raster(
                 output_paths[-1], clipped_data, transform, crs=raster.crs.to_string()
@@ -259,15 +256,7 @@ def run_gridfinder(
     est_mem = estimate_mem_use(targets, costs)
     log.info(f"Estimated memory usage of algorithm: {est_mem:.2f} GB")
 
-    dist = optimise(
-        targets,
-        costs,
-        start,
-        jupyter=False,
-        animate=True,
-        affine=affine,
-        animate_path=animate_out,
-    )
+    dist = optimise(targets, costs, start, jupyter=False, animate=False, affine=affine)
     save_2d_array_as_raster(dist_out, dist, affine, DEFAULT_CRS)
 
     guess = threshold_distances(dist, threshold=params["cutoff"])
