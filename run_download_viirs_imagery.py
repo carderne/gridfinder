@@ -101,8 +101,7 @@ def viirs_imagery_to_remote_storage(
             log.info(f"Processing date {date}")
             with ExitStack() as stack:
                 rasters = [
-                    stack.enter_context(open_raster_in_tar(tile, file_regex=FILE_REGEX))
-                    for tile in tiles
+                    stack.enter_context(open_raster_in_tar(tile)) for tile in tiles
                 ]
                 output_file = os.path.join(output_folder, f"{date}.tif")
                 combine_rasters_into_single_file(rasters, output_file=output_file)
