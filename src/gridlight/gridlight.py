@@ -11,13 +11,11 @@ Functions:
 import os
 import pickle
 import sys
-from heapq import heapify, heappush, heappop
+from heapq import heapify, heappop, heappush
 from math import sqrt
 
 import numpy as np
 import rasterio
-from IPython.display import display, Markdown
-import tqdm
 
 from src.gridlight.constants import CRS
 from src.gridlight.util.raster import save_2d_array_as_raster
@@ -159,8 +157,6 @@ def optimise(
     counter = 0
     progress = 0
     max_cells = targets.shape[0] * targets.shape[1]
-    if jupyter:
-        handle = display(Markdown(""), display_id=True)
 
     while len(queue):
         current = heappop(queue)
@@ -219,9 +215,7 @@ def optimise(
                         if int(progress_new) > int(progress):
                             progress = progress_new
                             message = f"{progress:.2f} %"
-                            if jupyter:
-                                handle.update(message)
-                            elif not silent:
+                            if not silent:
                                 print(message)
                             if animate:
                                 i = int(progress)

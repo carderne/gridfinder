@@ -1,7 +1,29 @@
+[tool.poetry]
+name = "gridlight"
+version = "0.1.0"
+description = "A package to predict electrification status of settlements and MV power line predictions using NASA VIIRS nightlight imagery."
+authors = [ "VIDA.place" "AppliedAI" "Chris Arderne"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+scikit-image = "^0.20.0"
+geopandas = "^0.13.0"
+rasterio = "^1.3.6"
+accsr = "0.3.4"
+beautifulsoup4 = "^4.12.2"
+python-keycloak = "^2.16.2"
+sklearn = "^0.0.post5"
+shapely = "^2.0.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+pylint = "^2.17.4"
+isort = "^5.12.0"
+pytest = "^7.3.1"
+
 [build-system]
-# Must be kept in sync with `requirements.txt`
-requires = [
-    "setuptools >= 46.0.0",
-    "setuptools_scm >= 2.0.0, <3"
-]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
