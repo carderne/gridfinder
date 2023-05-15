@@ -2,7 +2,7 @@
 name = "gridlight"
 version = "0.1.0"
 description = "A package to predict electrification status of settlements and MV power line predictions using NASA VIIRS nightlight imagery."
-authors = [ "VIDA.place" "AppliedAI" "Chris Arderne"]
+authors = []
 license = "MIT"
 readme = "README.md"
 
@@ -14,8 +14,8 @@ rasterio = "^1.3.6"
 accsr = "0.3.4"
 beautifulsoup4 = "^4.12.2"
 python-keycloak = "^2.16.2"
-sklearn = "^0.0.post5"
 shapely = "^2.0.1"
+scikit-learn = "^1.2.2"
 
 
 [tool.poetry.group.dev.dependencies]
