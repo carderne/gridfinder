@@ -5,6 +5,9 @@ description = "A package to predict electrification status of settlements and MV
 authors = []
 license = "MIT"
 readme = "README.md"
+packages = [
+    { include = "gridlight", from="src" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
