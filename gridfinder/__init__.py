@@ -12,5 +12,6 @@ from importlib.metadata import version
 from .gridfinder import *  # NoQA
 from .post import *  # NoQA
 from .prepare import *  # NoQA
+from .util import *  # NoQA
 
 __version__ = version("gridfinder")
