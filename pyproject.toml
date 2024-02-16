@@ -32,6 +32,7 @@ dependencies = [
   "click ~= 8.0",
   "fiona ~= 1.9",
   "geopandas ~= 0.14",
+  "numba ~= 0.58",
   "numpy ~= 1.26",
   "pandas ~= 2.2",
   "pillow ~= 10.2",
