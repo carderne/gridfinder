@@ -19,7 +19,7 @@ from rasterio.mask import mask
 from rasterio.warp import Resampling, reproject
 from scipy import signal
 
-from gridfinder._util import clip_raster, save_raster
+from gridfinder.util import clip_raster, save_raster
 
 
 def clip_rasters(

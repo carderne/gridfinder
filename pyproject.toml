@@ -87,14 +87,11 @@ select = [
 [tool.ruff.lint.isort]
 known-first-party = ["gridfinder"]
 
-[tool.mypy]
-show_error_codes = true
-show_error_context = true
-show_traceback = true
-disallow_untyped_defs = true
-disallow_any_unimported = true
-no_implicit_optional = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-warn_unreachable = true
+[tool.pyright]
+include = ["gridfinder"]
+reportMissingImports = true
+reportMissingParameterType = true
+reportUnnecessaryTypeIgnoreComment = true
+reportDeprecated = true
+pythonVersion = "3.12"
+pythonPlatform = "Linux"

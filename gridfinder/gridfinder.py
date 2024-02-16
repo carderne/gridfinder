@@ -14,7 +14,7 @@ import rasterio
 from affine import Affine
 from IPython.display import Markdown, display
 
-from gridfinder._util import save_raster
+from gridfinder.util import save_raster
 
 sys.setrecursionlimit(100000)
 
@@ -84,7 +84,7 @@ def optimise(
     jupyter: bool = False,
     animate: bool = False,
     affine: Optional[Affine] = None,
-    animate_path: Optional[str] = None,
+    animate_path: str = "",
     silent: bool = False,
 ) -> np.ndarray:
     """Run the Dijkstra algorithm for the supplied arrays.
@@ -102,6 +102,7 @@ def optimise(
         2D array with the distance (in cells) of each point from a 'found'
         on-grid point. Values of 0 imply that cell is part of an MV grid line.
     """
+
 
     max_i = costs.shape[0]
     max_j = costs.shape[1]
@@ -141,6 +142,7 @@ def optimise(
     counter = 0
     progress = 0
     max_cells = targets.shape[0] * targets.shape[1]
+    handle = None
     if jupyter:
         handle = display(Markdown(""), display_id=True)
 
@@ -201,13 +203,15 @@ def optimise(
                         if int(progress_new) > int(progress):
                             progress = progress_new
                             message = f"{progress:.2f} %"
-                            if jupyter:
+                            if jupyter and handle:
                                 handle.update(message)
                             elif not silent:
                                 print(message)
                             if animate:
                                 i = int(progress)
                                 path = os.path.join(animate_path, f"arr{i:03d}.tif")
+                                if not affine:
+                                    raise ValueError("Must provide an affine when animate=True")  # NoQA
                                 save_raster(path, dist, affine)
 
     return dist
