@@ -9,7 +9,6 @@ gridfinder package contains the following modules:
 
 from importlib.metadata import version
 
-from ._util import *  # NoQA
 from .gridfinder import *  # NoQA
 from .post import *  # NoQA
 from .prepare import *  # NoQA

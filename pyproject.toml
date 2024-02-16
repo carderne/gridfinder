@@ -49,6 +49,7 @@ dev = [
   "descartes ~= 1.1.0",
   "folium ~= 0.15",
   "matplotlib ~= 3.8",
+  "ruff ~= 0.2",
   "seaborn ~= 0.13",
 ]
 

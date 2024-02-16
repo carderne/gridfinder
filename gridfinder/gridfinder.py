@@ -1,48 +1,40 @@
 """
 Implements Dijkstra's algorithm on a cost-array to create an MST.
-
-Functions:
-
-- get_targets_costs
-- estimate_mem_use
-- optimise
 """
 
 import os
-import sys
-from math import sqrt
-from heapq import heapify, heappush, heappop
 import pickle
+import sys
+from heapq import heapify, heappop, heappush
+from math import sqrt
+from typing import Optional, Tuple
 
 import numpy as np
 import rasterio
-from IPython.display import display, Markdown
+from affine import Affine
+from IPython.display import Markdown, display
 
 from gridfinder._util import save_raster
 
 sys.setrecursionlimit(100000)
 
 
-def get_targets_costs(targets_in, costs_in):
+def get_targets_costs(
+    targets_in: str, costs_in: str
+) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int], Affine]:
     """Load the targets and costs arrays from the given file paths.
 
     Parameters
     ----------
-    targets_in : str
-        Path for targets raster.
-    costs_in : str
-        Path for costs raster.
+    targets_in : Path for targets raster.
+    costs_in : Path for costs raster.
 
     Returns
     -------
-    targets : numpy array
-        2D array of targets
-    costs: numpy array
-        2D array of costs
-    start: tuple
-        Two-element tuple with row, col of starting point.
-    affine : affine.Affine
-        Affine transformation for the rasters.
+    targets : 2D array of targets
+    costs: 2D array of costs
+    start: tuple with row, col of starting point.
+    affine : Affine transformation for the rasters.
     """
 
     targets_ra = rasterio.open(targets_in)
@@ -61,20 +53,17 @@ def get_targets_costs(targets_in, costs_in):
     return targets, costs, start, affine
 
 
-def estimate_mem_use(targets, costs):
+def estimate_mem_use(targets: np.ndarray, costs: np.ndarray) -> float:
     """Estimate memory usage in GB, probably not very accurate.
 
     Parameters
     ----------
-    targets : numpy array
-        2D array of targets.
-    costs : numpy array
-        2D array of costs.
+    targets : 2D array of targets.
+    costs : 2D array of costs.
 
     Returns
     -------
-    est_mem : float
-        Estimated memory requirement in GB.
+    est_mem : Estimated memory requirement in GB.
     """
 
     # make sure these match the ones used in optimise below
@@ -89,31 +78,27 @@ def estimate_mem_use(targets, costs):
 
 
 def optimise(
-    targets,
-    costs,
-    start,
-    jupyter=False,
-    animate=False,
-    affine=None,
-    animate_path=None,
-    silent=False,
-):
+    targets: np.ndarray,
+    costs: np.ndarray,
+    start: Tuple[int, int],
+    jupyter: bool = False,
+    animate: bool = False,
+    affine: Optional[Affine] = None,
+    animate_path: Optional[str] = None,
+    silent: bool = False,
+) -> np.ndarray:
     """Run the Dijkstra algorithm for the supplied arrays.
 
     Parameters
     ----------
-    targets : numpy array
-        2D array of targets.
-    costs : numpy array
-        2D array of costs.
-    start : tuple
-        Two-element tuple with row, col of starting point.
-    jupyter : boolean, optional (default False)
-        Whether the code is being run from a Jupyter Notebook.
+    targets : 2D array of targets.
+    costs : 2D array of costs.
+    start : tuple with row, col of starting point.
+    jupyter : Whether the code is being run from a Jupyter Notebook.
 
     Returns
     -------
-    dist : numpy array
+    dist :
         2D array with the distance (in cells) of each point from a 'found'
         on-grid point. Values of 0 imply that cell is part of an MV grid line.
     """
@@ -135,13 +120,12 @@ def optimise(
     queue = [[0, start]]
     heapify(queue)
 
-    def zero_and_heap_path(loc):
+    def zero_and_heap_path(loc: Tuple[int, int]) -> None:
         """Zero the location's distance value and follow upstream doing same.
 
         Parameters
         ----------
-        loc : tuple
-            row, col of current point.
+        loc : row, col of current point.
         """
 
         if not dist[loc] == 0:

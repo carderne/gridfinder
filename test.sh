@@ -12,3 +12,5 @@ sed -i -e 's/plt.imshow(.*)//g' example.py
 
 # run script
 python example.py
+
+rm example.py example.py-e

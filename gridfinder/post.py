@@ -1,48 +1,45 @@
 """
 Post-processing for gridfinder package.
-
-Functions:
-
-- threshold
-- thin
-- raster_to_lines
-- accuracy
-- true_positives
-- false_negatives
-- flip_arr_values
 """
 
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-from skimage.morphology import skeletonize
-import shapely.wkt
-from shapely.geometry import Point, LineString
 import rasterio
+import shapely.wkt
+from affine import Affine
 from rasterio.features import rasterize
 from rasterio.transform import xy
+from shapely.geometry import LineString, Point
+from skimage.morphology import skeletonize
 
 
-def threshold(dists_in, cutoff=0.0):
+def threshold(
+    dists_in: Union[str, Path, np.ndarray], cutoff: float = 0.0
+) -> Tuple[np.ndarray, Optional[Affine]]:
     """Convert distance array into binary array of connected locations.
 
     Parameters
     ----------
-    dists_in : path-like or numpy array
-        2D array output from gridfinder algorithm.
-    cutoff : float, optional (default 0.5.)
-        Cutoff value below which consider the cells to be grid.
+    dists_in : 2D array output from gridfinder algorithm.
+    cutoff : Cutoff value below which consider the cells to be grid.
 
     Returns
     -------
-    guess : numpy array
-        Binary representation of input array.
-    affine: affine.Affine
-        Affine transformation for raster.
+    guess : Binary representation of input array.
+    affine: Affine transformation for raster.
     """
-    if isinstance(dists_in, (str, Path)):
+    if isinstance(dists_in, np.ndarray):
+        guess = dists_in.copy()
+        guess[dists_in > cutoff] = 0
+        guess[dists_in <= cutoff] = 1
+
+        return guess, None
+
+    else:
         dists_rd = rasterio.open(dists_in)
         dists_r = dists_rd.read(1)
         affine = dists_rd.transform
@@ -53,35 +50,26 @@ def threshold(dists_in, cutoff=0.0):
 
         return guess, affine
 
-    elif isinstance(dists_in, np.ndarray):
-        guess = dists_in.copy()
-        guess[dists_in > cutoff] = 0
-        guess[dists_in <= cutoff] = 1
 
-        return guess
-
-    else:
-        raise ValueError
-
-
-def thin(guess_in):
+def thin(guess_in: Union[str, Path, np.ndarray]) -> Tuple[np.ndarray, Optional[Affine]]:
     """
     Use scikit-image skeletonize to 'thin' the guess raster.
 
     Parameters
     ----------
-    guess_in : path-like or 2D array
-        Output from threshold().
+    guess_in : Output from threshold().
 
     Returns
     -------
-    guess_skel : numpy array
-        Thinned version.
-    affine : Affine
-        Only if path-like supplied.
+    guess_skel : Thinned version.
+    affine : Only if path-like supplied.
     """
 
-    if isinstance(guess_in, (str, Path)):
+    if isinstance(guess_in, np.ndarray):
+        guess_skel = skeletonize(guess_in)
+        guess_skel = guess_skel.astype("int32")
+        return guess_skel, None
+    else:
         guess_rd = rasterio.open(guess_in)
         guess_arr = guess_rd.read(1)
         affine = guess_rd.transform
@@ -91,29 +79,18 @@ def thin(guess_in):
 
         return guess_skel, affine
 
-    elif isinstance(guess_in, np.ndarray):
-        guess_skel = skeletonize(guess_in)
-        guess_skel = guess_skel.astype("int32")
 
-        return guess_skel
-
-    else:
-        raise ValueError
-
-
-def raster_to_lines(guess_skel_in):
+def raster_to_lines(guess_skel_in: Union[str, Path]) -> gpd.GeoDataFrame:
     """
     Convert thinned raster to linestring geometry.
 
     Parameters
     ----------
-    guess_skel_in : path-like
-        Output from thin().
+    guess_skel_in : Output from thin().
 
     Returns
     -------
-    guess_gdf : GeoDataFrame
-        Converted to geometry.
+    guess_gdf : Converted to geometry.
     """
 
     rast = rasterio.open(guess_skel_in)
@@ -172,19 +149,20 @@ def raster_to_lines(guess_skel_in):
     return guess_gdf
 
 
-def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
+def accuracy(
+    grid_in: Union[str, Path],
+    guess_in: Union[str, Path],
+    aoi_in: Union[str, Path],
+    buffer_amount: float = 0.01,
+) -> Tuple[float, float]:
     """Measure accuracy against a specified grid 'truth' file.
 
     Parameters
     ----------
-    grid_in : str, Path
-        Path to vector truth file.
-    guess_in : str, Path
-        Path to guess output from guess2geom.
-    aoi_in : str, Path
-        Path to AOI feature.
-    buffer_amount : float, optional (default 0.01.)
-        Leeway in decimal degrees in calculating equivalence.
+    grid_in : Path to vector truth file.
+    guess_in : Path to guess output from guess2geom.
+    aoi_in : Path to AOI feature.
+    buffer_amount : Leeway in decimal degrees in calculating equivalence.
         0.01 DD equals approximately 1 mile at the equator.
     """
 
@@ -229,20 +207,17 @@ def accuracy(grid_in, guess_in, aoi_in, buffer_amount=0.01):
     return tp, fn
 
 
-def true_positives(guesses, truths):
+def true_positives(guesses: np.ndarray, truths: np.ndarray) -> float:
     """Calculate true positives, used by accuracy().
 
     Parameters
     ----------
-    guesses : numpy array
-        Output from model.
-    truths : numpy array
-        Truth feature converted to array.
+    guesses : Output from model.
+    truths : Truth feature converted to array.
 
     Returns
     -------
-    tp : float
-        Ratio of true positives.
+    tp : Ratio of true positives.
     """
 
     yes_guesses = 0
@@ -264,20 +239,17 @@ def true_positives(guesses, truths):
     return tp
 
 
-def false_negatives(guesses, truths):
+def false_negatives(guesses: np.ndarray, truths: np.ndarray) -> float:
     """Calculate false negatives, used by accuracy().
 
     Parameters
     ----------
-    guesses : numpy array
-        Output from model.
-    truths : numpy array
-        Truth feature converted to array.
+    guesses : Output from model.
+    truths : Truth feature converted to array.
 
     Returns
     -------
-    fn : float
-        Ratio of false negatives.
+    fn : Ratio of false negatives.
     """
 
     actual_grid = 0
@@ -318,7 +290,7 @@ def false_negatives(guesses, truths):
     return fn
 
 
-def flip_arr_values(arr):
+def flip_arr_values(arr: np.ndarray) -> np.ndarray:
     """Simple helper function used by accuracy()"""
 
     arr[arr == 1] = 2
