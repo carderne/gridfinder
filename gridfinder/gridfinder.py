@@ -7,7 +7,8 @@ import pickle
 import sys
 from heapq import heapify, heappop, heappush
 from math import sqrt
-from typing import Optional, Tuple
+from pathlib import Path
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import rasterio
@@ -20,7 +21,7 @@ sys.setrecursionlimit(100000)
 
 
 def get_targets_costs(
-    targets_in: str, costs_in: str
+    targets_in: Union[str, Path], costs_in: Union[str, Path],
 ) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int], Affine]:
     """Load the targets and costs arrays from the given file paths.
 
