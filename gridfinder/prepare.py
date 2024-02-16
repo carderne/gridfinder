@@ -19,13 +19,13 @@ from rasterio.mask import mask
 from rasterio.warp import Resampling, reproject
 from scipy import signal
 
-from gridfinder.util import clip_raster, save_raster
+from gridfinder.util import Pathy, clip_raster, save_raster
 
 
 def clip_rasters(
-    folder_in: Union[str, Path],
-    folder_out: Union[str, Path],
-    aoi_in: Union[str, Path],
+    folder_in: Pathy,
+    folder_out: Pathy,
+    aoi_in: Pathy,
     debug: bool = False,
 ) -> None:
     """Read continental rasters one at a time, clip to AOI and save
@@ -58,7 +58,7 @@ def clip_rasters(
 
 
 def merge_rasters(
-    folder: Union[str, Path],
+    folder: Pathy,
     percentile: int = 70,
 ) -> Tuple[np.ndarray, Optional[Affine]]:
     """Merge a set of monthly rasters keeping the nth percentile value.
@@ -119,8 +119,8 @@ def create_filter() -> np.ndarray:
 
 
 def prepare_ntl(
-    ntl_in: Union[str, Path],
-    aoi_in: Union[str, Path],
+    ntl_in: Pathy,
+    aoi_in: Pathy,
     ntl_filter: Optional[np.ndarray] = None,
     threshold: float = 0.1,
     upsample_by: int = 2,
@@ -204,9 +204,9 @@ def prepare_ntl(
 
 
 def drop_zero_pop(
-    targets_in: Union[str, Path],
-    pop_in: Union[str, Path],
-    aoi: Union[str, Path, GeoDataFrame],
+    targets_in: Pathy,
+    pop_in: Pathy,
+    aoi: Union[Pathy, GeoDataFrame],
 ) -> np.ndarray:
     """Drop electrified cells with no other evidence of human activity.
 
@@ -297,9 +297,9 @@ def drop_zero_pop(
 
 
 def prepare_roads(
-    roads_in: Union[str, Path],
-    aoi_in: Union[str, Path, GeoDataFrame],
-    ntl_in: Union[str, Path],
+    roads_in: Pathy,
+    aoi_in: Union[Pathy, GeoDataFrame],
+    ntl_in: Pathy,
 ) -> Tuple[np.ndarray, Affine]:
     """Prepare a roads feature layer for use in algorithm.
 
@@ -327,10 +327,10 @@ def prepare_roads(
         aoi = gpd.read_file(aoi_in)
 
     roads_masked = gpd.read_file(roads_in, mask=aoi)
-    roads = gpd.sjoin(roads_masked, aoi, how="inner", op="intersects")
+    roads = gpd.sjoin(roads_masked, aoi, how="inner", predicate="intersects")
     roads = roads[roads_masked.columns]
 
-    roads["weight"] = 1
+    roads["weight"] = 1.0
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
     roads.loc[roads["highway"] == "trunk", "weight"] = 1 / 9
     roads.loc[roads["highway"] == "primary", "weight"] = 1 / 8

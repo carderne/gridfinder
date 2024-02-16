@@ -2,7 +2,6 @@
 Post-processing for gridfinder package.
 """
 
-from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import geopandas as gpd
@@ -16,9 +15,11 @@ from rasterio.transform import xy
 from shapely.geometry import LineString, Point
 from skimage.morphology import skeletonize
 
+from gridfinder.util import Pathy
+
 
 def threshold(
-    dists_in: Union[str, Path, np.ndarray], cutoff: float = 0.0
+    dists_in: Union[Pathy, np.ndarray], cutoff: float = 0.0
 ) -> Tuple[np.ndarray, Optional[Affine]]:
     """Convert distance array into binary array of connected locations.
 
@@ -51,7 +52,7 @@ def threshold(
         return guess, affine
 
 
-def thin(guess_in: Union[str, Path, np.ndarray]) -> Tuple[np.ndarray, Optional[Affine]]:
+def thin(guess_in: Union[Pathy, np.ndarray]) -> Tuple[np.ndarray, Optional[Affine]]:
     """
     Use scikit-image skeletonize to 'thin' the guess raster.
 
@@ -80,7 +81,7 @@ def thin(guess_in: Union[str, Path, np.ndarray]) -> Tuple[np.ndarray, Optional[A
         return guess_skel, affine
 
 
-def raster_to_lines(guess_skel_in: Union[str, Path]) -> gpd.GeoDataFrame:
+def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
     """
     Convert thinned raster to linestring geometry.
 
@@ -150,9 +151,9 @@ def raster_to_lines(guess_skel_in: Union[str, Path]) -> gpd.GeoDataFrame:
 
 
 def accuracy(
-    grid_in: Union[str, Path],
-    guess_in: Union[str, Path],
-    aoi_in: Union[str, Path],
+    grid_in: Pathy,
+    guess_in: Pathy,
+    aoi_in: Pathy,
     buffer_amount: float = 0.01,
 ) -> Tuple[float, float]:
     """Measure accuracy against a specified grid 'truth' file.
@@ -172,7 +173,7 @@ def accuracy(
         aoi = gpd.read_file(aoi_in)
 
     grid_masked = gpd.read_file(grid_in, mask=aoi)
-    grid = gpd.sjoin(grid_masked, aoi, how="inner", op="intersects")
+    grid = gpd.sjoin(grid_masked, aoi, how="inner", predicate="intersects")
     grid = grid[grid_masked.columns]
 
     grid_buff = grid.buffer(buffer_amount)

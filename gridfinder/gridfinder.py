@@ -3,23 +3,21 @@ Implements Dijkstra's algorithm on a cost-array to create an MST.
 """
 
 import pickle
-import sys
 from heapq import heapify, heappop, heappush
 from math import sqrt
-from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 import numba as nb
 import numpy as np
 import rasterio
 from affine import Affine
 
-sys.setrecursionlimit(100000)
+from gridfinder.util import Pathy
 
 
 def get_targets_costs(
-    targets_in: Union[str, Path],
-    costs_in: Union[str, Path],
+    targets_in: Pathy,
+    costs_in: Pathy,
 ) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int], Affine]:
     """Load the targets and costs arrays from the given file paths.
 

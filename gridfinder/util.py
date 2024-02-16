@@ -15,9 +15,11 @@ from pyproj import Proj
 from rasterio.io import DatasetReader
 from rasterio.mask import mask
 
+Pathy = Union[str, Path]
+
 
 def save_raster(
-    path: Union[str, Path],
+    path: Pathy,
     raster: np.ndarray,
     affine: Affine,
     crs: Optional[Union[str, Proj]] = None,
@@ -57,8 +59,8 @@ def save_raster(
 
 
 def clip_raster(
-    raster: Union[str, Path, DatasetReader],
-    boundary: Union[str, Path, GeoDataFrame],
+    raster: Union[Pathy, DatasetReader],
+    boundary: Union[Pathy, GeoDataFrame],
     boundary_layer: Optional[str] = None,
 ) -> Tuple[
     np.ndarray,
