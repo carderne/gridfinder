@@ -17,6 +17,8 @@ from rasterio.mask import mask
 
 Pathy = Union[str, Path]
 
+Loc = Tuple[int, int]
+
 
 def save_raster(
     path: Pathy,
@@ -28,6 +30,7 @@ def save_raster(
     """Save a raster to the specified file.
 
     Parameters
+
     ----------
     file : Output file path
     raster : 2D numpy array containing raster values

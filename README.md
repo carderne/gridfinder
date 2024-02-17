@@ -8,8 +8,8 @@ The algorithm looks as follows in process, guessing the grid network for Uganda:
 
 ## Input requirements
 gridfinder requires the following data sources:
-- VIIRS data, monthly and annual composites available [here](https://ngdc.noaa.gov/eog/viirs/download_dnb_composites.html).
-- OSM highway data, most easily available using the [HOT Export Tool](https://export.hotosm.org/en/v3/), otherwise [BBBike](https://extract.bbbike.org/) or [geofabrik](https://download.geofabrik.de/), depending on your needs.
+- VIIRS data, monthly and annual composites available [here](https://eogdata.mines.edu/products/vnl/).
+- OSM highway data, most easily available using the [HOT Export Tool](https://export.hotosm.org/en/v3/), otherwise [geofabrik](https://download.geofabrik.de/)
 
 ## Model usage
 
@@ -18,19 +18,29 @@ This repository  includes the input data needed to do a test run for Burundi, so
 
 ## Installation
 ### Install with pip
-
-    pip install gridfinder
+```bash
+pip install gridfinder
+```
 
 **Note:** On some operating systems (Ubuntu 18.04), you may get an error about `libspatialindex`. To overcome this on Ubuntu, run:
+```bash
+sudo apt install libspatialindex-dev
+```
 
-    sudo apt install libspatialindex-dev
-
-### Install from GitHub
+## Development
 Download or clone the repository and install the required packages (preferably in a virtual environment):
+```bash
+git clone https://github.com/carderne/gridfinder.git
+cd gridfinder
+pip install -e '.[dev]'
+```
 
-    git clone https://github.com/carderne/gridfinder.git
-    cd gridfinder
-    pip install -e '.[dev]'
+### Linting
+```bash
+make lint
+```
 
-You can run ```./test.sh``` in the directory, which will do an entire run through using the test data and confirm whether everything is set up properly.
-(It will fail if jupyter isn't installed!)
+### Testing
+```bash
+make test
+```

@@ -172,10 +172,7 @@ def accuracy(
     else:
         aoi = gpd.read_file(aoi_in)
 
-    grid_masked = gpd.read_file(grid_in, mask=aoi)
-    grid = gpd.sjoin(grid_masked, aoi, how="inner", predicate="intersects")
-    grid = grid[grid_masked.columns]
-
+    grid = gpd.read_file(grid_in, mask=aoi)
     grid_buff = grid.buffer(buffer_amount)
 
     guesses_reader = rasterio.open(guess_in)

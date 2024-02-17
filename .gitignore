@@ -1,8 +1,6 @@
 # Custom
-server/
-test_output/
-quickrun.py
-filter.ipynb
+examples/*.tif
+examples/*.gpkg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

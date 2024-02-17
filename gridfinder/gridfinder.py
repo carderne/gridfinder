@@ -12,13 +12,13 @@ import numpy as np
 import rasterio
 from affine import Affine
 
-from gridfinder.util import Pathy
+from gridfinder.util import Loc, Pathy
 
 
 def get_targets_costs(
     targets_in: Pathy,
     costs_in: Pathy,
-) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int], Affine]:
+) -> Tuple[np.ndarray, np.ndarray, Loc, Affine]:
     """Load the targets and costs arrays from the given file paths.
 
     Parameters
@@ -78,7 +78,7 @@ def estimate_mem_use(targets: np.ndarray, costs: np.ndarray) -> float:
 def optimise(
     targets: np.ndarray,
     costs: np.ndarray,
-    start: Tuple[int, int],
+    start: Loc,
     silent: bool = False,
     jupyter: bool = False,
     animate: bool = False,
@@ -116,8 +116,7 @@ def optimise(
 
     dist[start] = 0
 
-    #                 dist,      loc
-    queue: List[Tuple[float, Tuple[int, int]]] = [(0.0, start)]
+    queue: List[Tuple[float, Loc]] = [(0.0, start)]
     heapify(queue)
 
     counter = 0
@@ -125,14 +124,13 @@ def optimise(
     max_cells = targets.shape[0] * targets.shape[1]
 
     while len(queue):
-        current = heappop(queue)
-        current_loc = current[1]
+        _, current_loc = heappop(queue)
         current_i = current_loc[0]
         current_j = current_loc[1]
         current_dist = dist[current_loc]
 
-        for x in range(-1, 2):
-            for y in range(-1, 2):
+        for x in (-1, 0, 1):
+            for y in (-1, 0, 1):
                 next_i = current_i + x
                 next_j = current_j + y
                 next_loc = (next_i, next_j)
@@ -146,7 +144,7 @@ def optimise(
                     continue
 
                 # skip if we've already set dist to 0
-                if dist[next_loc] == 0:
+                if dist[next_loc] == 0.0:
                     continue
 
                 # if the location is connected
@@ -166,9 +164,7 @@ def optimise(
                 # otherwise it's a normal queue cell
                 else:
                     dist_add = costs[next_loc]
-                    if x == 0 or y == 0:  # if this cell is  up/down/left/right
-                        dist_add *= 1
-                    else:  # or if it's diagonal
+                    if x != 0 and y != 0:  # diagonal
                         dist_add *= sqrt(2)
 
                     next_dist = current_dist + dist_add
@@ -188,8 +184,11 @@ def optimise(
                         if not silent:
                             counter += 1
                             progress_new = int(100 * counter / max_cells)
-                            if progress_new > progress + 4:
+                            if progress_new > progress:
                                 progress = progress_new
-                                print(progress, "%")
+                                if progress % 5 == 0:
+                                    print(progress)
+                                else:
+                                    print(".")
 
     return dist

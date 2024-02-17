@@ -15,11 +15,12 @@ import rasterio
 from geopandas.geodataframe import GeoDataFrame
 from rasterio import Affine
 from rasterio.features import rasterize
+from rasterio.io import MemoryFile
 from rasterio.mask import mask
 from rasterio.warp import Resampling, reproject
 from scipy import signal
 
-from gridfinder.util import Pathy, clip_raster, save_raster
+from gridfinder.util import Loc, Pathy, clip_raster, save_raster
 
 
 def clip_rasters(
@@ -221,12 +222,10 @@ def drop_zero_pop(
     Array with zero population sites dropped.
     """
 
-    if isinstance(aoi, (str, Path)):
-        aoi = gpd.read_file(aoi)
+    aoi_gdf = gpd.read_file(aoi) if isinstance(aoi, (str, Path)) else aoi
 
     # Clip population layer to AOI
-    clipped, affine, crs = clip_raster(pop_in, aoi)
-    # clipped = clipped[0]  # no longer needed, fixed in clip_raster
+    clipped, affine, crs = clip_raster(pop_in, aoi_gdf)
 
     # We need to warp the population layer to exactly overlap with targets
     # First get array, affine and crs from targets (which is what we)
@@ -256,7 +255,7 @@ def drop_zero_pop(
     max_i = targets.shape[0]
     max_j = targets.shape[1]
 
-    def add_around(blob: list, cell: Tuple[int, int]) -> list:
+    def add_around(blob: list, cell: Loc) -> list:
         blob.append(cell)
         skip.append(cell)
 
@@ -300,6 +299,7 @@ def prepare_roads(
     roads_in: Pathy,
     aoi_in: Union[Pathy, GeoDataFrame],
     ntl_in: Pathy,
+    nodata: float = 1,
 ) -> Tuple[np.ndarray, Affine]:
     """Prepare a roads feature layer for use in algorithm.
 
@@ -326,9 +326,7 @@ def prepare_roads(
     else:
         aoi = gpd.read_file(aoi_in)
 
-    roads_masked = gpd.read_file(roads_in, mask=aoi)
-    roads = gpd.sjoin(roads_masked, aoi, how="inner", predicate="intersects")
-    roads = roads[roads_masked.columns]
+    roads = gpd.read_file(roads_in)
 
     roads["weight"] = 1.0
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
@@ -351,7 +349,7 @@ def prepare_roads(
     roads = roads.sort_values(by="weight", ascending=False)
 
     roads_for_raster = [(row.geometry, row.weight) for _, row in roads.iterrows()]
-    roads_raster = rasterize(
+    rast = rasterize(
         roads_for_raster,
         out_shape=shape,
         fill=1,
@@ -360,4 +358,27 @@ def prepare_roads(
         transform=affine,
     )
 
-    return roads_raster, affine
+    # Clip resulting raster by the AOI
+    if not aoi.crs == roads.crs:
+        aoi: GeoDataFrame = aoi.to_crs(crs=roads.crs)  # type: ignore
+    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
+
+    with MemoryFile() as f:
+        with f.open(
+            transform=affine,
+            driver="GTiff",
+            height=shape[0],
+            width=shape[1],
+            count=1,
+            dtype=rast.dtype,
+            crs=roads.crs,
+            nodata=nodata,
+        ) as ds:
+            ds.write(rast, 1)
+        with f.open() as ds:
+            clipped, affine = mask(dataset=ds, shapes=coords, crop=True, nodata=nodata)
+
+    if len(clipped.shape) >= 3:
+        clipped = clipped[0]
+
+    return clipped, affine
