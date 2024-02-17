@@ -125,26 +125,22 @@ def optimise(
 
     while len(queue):
         _, current_loc = heappop(queue)
-        current_i = current_loc[0]
-        current_j = current_loc[1]
         current_dist = dist[current_loc]
 
         for x in (-1, 0, 1):
             for y in (-1, 0, 1):
-                next_i = current_i + x
-                next_j = current_j + y
+                next_i = current_loc[0] + x
+                next_j = current_loc[1] + y
                 next_loc = (next_i, next_j)
 
-                # ensure we're within bounds
-                if next_i < 0 or next_j < 0 or next_i >= max_i or next_j >= max_j:
-                    continue
-
-                # ensure we're not looking at the same spot
-                if next_loc == current_loc:
-                    continue
-
-                # skip if we've already set dist to 0
-                if dist[next_loc] == 0.0:
+                if (
+                    (x == 0 and y == 0)  # same spot
+                    or dist[next_loc] == 0.0  # already zerod
+                    or next_i < 0  # out of bounds
+                    or next_j < 0
+                    or next_i >= max_i
+                    or next_j >= max_j
+                ):
                     continue
 
                 # if the location is connected
@@ -169,12 +165,14 @@ def optimise(
 
                     next_dist = current_dist + dist_add
 
+                    # visited before
                     if visited[next_loc]:
                         if next_dist < dist[next_loc]:
                             dist[next_loc] = next_dist
                             prev[next_loc] = current_loc
                             heappush(queue, (next_dist, next_loc))
 
+                    # brand new cell - progress!
                     else:
                         heappush(queue, (next_dist, next_loc))
                         visited[next_loc] = 1
@@ -186,9 +184,14 @@ def optimise(
                             progress_new = int(100 * counter / max_cells)
                             if progress_new > progress:
                                 progress = progress_new
-                                if progress % 5 == 0:
-                                    print(progress)
-                                else:
-                                    print(".")
-
+                                with nb.objmode():
+                                    print_progress(progress)
+    print()
     return dist
+
+
+def print_progress(progress: int) -> None:
+    if progress % 5 == 0:
+        print(progress, end="", flush=True)
+    else:
+        print(".", end="", flush=True)
