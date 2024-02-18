@@ -2,12 +2,11 @@
 Post-processing for gridfinder package.
 """
 
-from typing import Optional, Tuple, Union
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import rasterio
+import rasterio as rs
 import shapely.wkt
 from affine import Affine
 from rasterio.features import rasterize
@@ -18,9 +17,7 @@ from skimage.morphology import skeletonize
 from gridfinder.util import Pathy
 
 
-def threshold(
-    dists_in: Union[Pathy, np.ndarray], cutoff: float = 0.0
-) -> Tuple[np.ndarray, Optional[Affine]]:
+def threshold(dists_in: Pathy, cutoff: float = 0.0) -> tuple[np.ndarray, Affine]:
     """Convert distance array into binary array of connected locations.
 
     Parameters
@@ -33,26 +30,18 @@ def threshold(
     guess : Binary representation of input array.
     affine: Affine transformation for raster.
     """
-    if isinstance(dists_in, np.ndarray):
-        guess = dists_in.copy()
-        guess[dists_in > cutoff] = 0
-        guess[dists_in <= cutoff] = 1
+    with rs.open(dists_in) as ds:
+        dists_r = ds.read(1)
+        affine = ds.transform
 
-        return guess, None
+    guess = dists_r.copy()
+    guess[dists_r > cutoff] = 0
+    guess[dists_r <= cutoff] = 1
 
-    else:
-        dists_rd = rasterio.open(dists_in)
-        dists_r = dists_rd.read(1)
-        affine = dists_rd.transform
-
-        guess = dists_r.copy()
-        guess[dists_r > cutoff] = 0
-        guess[dists_r <= cutoff] = 1
-
-        return guess, affine
+    return guess, affine
 
 
-def thin(guess_in: Union[Pathy, np.ndarray]) -> Tuple[np.ndarray, Optional[Affine]]:
+def thin(guess_in: Pathy) -> tuple[np.ndarray, Affine]:
     """
     Use scikit-image skeletonize to 'thin' the guess raster.
 
@@ -63,22 +52,16 @@ def thin(guess_in: Union[Pathy, np.ndarray]) -> Tuple[np.ndarray, Optional[Affin
     Returns
     -------
     guess_skel : Thinned version.
-    affine : Only if path-like supplied.
+    affine : affine
     """
+    with rs.open(guess_in) as ds:
+        guess_arr = ds.read(1)
+        affine = ds.transform
 
-    if isinstance(guess_in, np.ndarray):
-        guess_skel = skeletonize(guess_in)
-        guess_skel = guess_skel.astype("int32")
-        return guess_skel, None
-    else:
-        guess_rd = rasterio.open(guess_in)
-        guess_arr = guess_rd.read(1)
-        affine = guess_rd.transform
+    guess_skel = skeletonize(guess_arr)
+    guess_skel = guess_skel.astype("int32")
 
-        guess_skel = skeletonize(guess_arr)
-        guess_skel = guess_skel.astype("int32")
-
-        return guess_skel, affine
+    return guess_skel, affine
 
 
 def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
@@ -94,9 +77,10 @@ def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
     guess_gdf : Converted to geometry.
     """
 
-    rast = rasterio.open(guess_skel_in)
-    arr = rast.read(1)
-    affine = rast.transform
+    with rs.open(guess_skel_in) as ds:
+        arr = ds.read(1)
+        rast_crs = ds.crs
+        affine = ds.transform
 
     max_row = arr.shape[0]
     max_col = arr.shape[1]
@@ -141,7 +125,7 @@ def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
     guess_gdf = pd.DataFrame(shapes)
     geometry = guess_gdf[0].map(shapely.wkt.loads)
     guess_gdf = guess_gdf.drop(0, axis=1)
-    guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=rast.crs, geometry=geometry)
+    guess_gdf = gpd.GeoDataFrame(guess_gdf, crs=rast_crs, geometry=geometry)
 
     guess_gdf["same"] = 0
     guess_gdf = guess_gdf.dissolve(by="same")
@@ -155,7 +139,7 @@ def accuracy(
     guess_in: Pathy,
     aoi_in: Pathy,
     buffer_amount: float = 0.01,
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """Measure accuracy against a specified grid 'truth' file.
 
     Parameters
@@ -175,25 +159,27 @@ def accuracy(
     grid = gpd.read_file(grid_in, mask=aoi)
     grid_buff = grid.buffer(buffer_amount)
 
-    guesses_reader = rasterio.open(guess_in)
-    guesses = guesses_reader.read(1)
+    with rs.open(guess_in) as ds:
+        guesses = ds.read(1)
+        out_shape = ds.shape
+        affine = ds.transform
 
     grid_for_raster = [(row.geometry) for _, row in grid.iterrows()]
     grid_raster = rasterize(
         grid_for_raster,
-        out_shape=guesses_reader.shape,
+        out_shape=out_shape,
         fill=1,
         default_value=0,
         all_touched=True,
-        transform=guesses_reader.transform,
+        transform=affine,
     )
     grid_buff_raster = rasterize(
         grid_buff,
-        out_shape=guesses_reader.shape,
+        out_shape=out_shape,
         fill=1,
         default_value=0,
         all_touched=True,
-        transform=guesses_reader.transform,
+        transform=affine,
     )
 
     grid_raster = flip_arr_values(grid_raster)

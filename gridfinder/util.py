@@ -4,20 +4,18 @@ Utility module used internally.
 
 import json
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
-import geopandas as gpd
 import numpy as np
-import rasterio
+import rasterio as rs
 from affine import Affine
 from geopandas import GeoDataFrame
 from pyproj import Proj
-from rasterio.io import DatasetReader
 from rasterio.mask import mask
 
 Pathy = Union[str, Path]
 
-Loc = Tuple[int, int]
+Loc = tuple[int, int]
 
 
 def save_raster(
@@ -45,7 +43,7 @@ def save_raster(
     if not crs:
         crs = "+proj=latlong"
 
-    filtered_out = rasterio.open(
+    with rs.open(
         p_path,
         "w",
         driver="GTiff",
@@ -56,16 +54,14 @@ def save_raster(
         crs=crs,
         transform=affine,
         nodata=nodata,
-    )
-    filtered_out.write(raster, 1)
-    filtered_out.close()
+    ) as filtered_out:
+        filtered_out.write(raster, 1)
 
 
 def clip_raster(
-    raster: Union[Pathy, DatasetReader],
-    boundary: Union[Pathy, GeoDataFrame],
-    boundary_layer: Optional[str] = None,
-) -> Tuple[
+    raster: Pathy,
+    boundary: GeoDataFrame,
+) -> tuple[
     np.ndarray,
     Affine,
     dict,
@@ -76,7 +72,6 @@ def clip_raster(
     ----------
     raster : Location of or already opened raster.
     boundary : The polygon by which to clip the raster.
-    boundary_layer : For multi-layer files (like GeoPackage), specify layer to be used.
 
     Returns
     -------
@@ -85,19 +80,12 @@ def clip_raster(
     crs : form {'init': 'epsg:4326'}
     """
 
-    raster_ds = raster if isinstance(raster, DatasetReader) else rasterio.open(raster)
+    raster_ds = rs.open(raster)
+    raster_crs = raster_ds.crs
 
-    boundary_gdf: GeoDataFrame = (
-        boundary
-        if isinstance(boundary, GeoDataFrame)
-        else gpd.read_file(boundary, layer=boundary_layer)
-    )
-
-    if not (
-        boundary_gdf.crs == raster_ds.crs or boundary_gdf.crs == raster_ds.crs.data
-    ):
-        boundary_gdf = boundary_gdf.to_crs(crs=raster_ds.crs)  # type: ignore
-    coords = [json.loads(boundary_gdf.to_json())["features"][0]["geometry"]]
+    if not (boundary.crs == raster_crs or boundary.crs == raster_crs.data):
+        boundary = boundary.to_crs(crs=raster_crs)  # type: ignore
+    coords = [json.loads(boundary.to_json())["features"][0]["geometry"]]
 
     # mask/clip the raster using rasterio.mask
     clipped, affine = mask(dataset=raster_ds, shapes=coords, crop=True)
@@ -105,4 +93,6 @@ def clip_raster(
     if len(clipped.shape) >= 3:
         clipped = clipped[0]
 
-    return clipped, affine, raster_ds.crs
+    raster_ds.close()
+
+    return clipped, affine, raster_crs

@@ -2,14 +2,12 @@
 Implements Dijkstra's algorithm on a cost-array to create an MST.
 """
 
-import pickle
 from heapq import heapify, heappop, heappush
 from math import sqrt
-from typing import List, Optional, Tuple
 
 import numba as nb
 import numpy as np
-import rasterio
+import rasterio as rs
 from affine import Affine
 
 from gridfinder.util import Loc, Pathy
@@ -18,7 +16,7 @@ from gridfinder.util import Loc, Pathy
 def get_targets_costs(
     targets_in: Pathy,
     costs_in: Pathy,
-) -> Tuple[np.ndarray, np.ndarray, Loc, Affine]:
+) -> tuple[np.ndarray, np.ndarray, Loc, Affine]:
     """Load the targets and costs arrays from the given file paths.
 
     Parameters
@@ -34,12 +32,12 @@ def get_targets_costs(
     affine : Affine transformation for the rasters.
     """
 
-    targets_ra = rasterio.open(targets_in)
-    affine = targets_ra.transform
-    targets = targets_ra.read(1)
+    with rs.open(targets_in) as ds:
+        affine = ds.transform
+        targets = ds.read(1)
 
-    costs_ra = rasterio.open(costs_in)
-    costs = costs_ra.read(1)
+    with rs.open(costs_in) as ds:
+        costs = ds.read(1)
 
     target_list = np.argwhere(targets == 1.0)
     start = tuple(target_list[0].tolist())
@@ -50,40 +48,12 @@ def get_targets_costs(
     return targets, costs, start, affine
 
 
-def estimate_mem_use(targets: np.ndarray, costs: np.ndarray) -> float:
-    """Estimate memory usage in GB, probably not very accurate.
-
-    Parameters
-    ----------
-    targets : 2D array of targets.
-    costs : 2D array of costs.
-
-    Returns
-    -------
-    est_mem : Estimated memory requirement in GB.
-    """
-
-    # make sure these match the ones used in optimise below
-    visited = np.zeros_like(targets, dtype=np.int8)
-    dist = np.full_like(costs, np.nan, dtype=np.float32)
-    prev = np.full_like(costs, np.nan, dtype=object)
-
-    est_mem_arr = [targets, costs, visited, dist, prev]
-    est_mem = len(pickle.dumps(est_mem_arr, -1))
-
-    return est_mem / 1e9
-
-
 @nb.njit
 def optimise(
     targets: np.ndarray,
     costs: np.ndarray,
     start: Loc,
     silent: bool = False,
-    jupyter: bool = False,
-    animate: bool = False,
-    affine: Optional[Affine] = None,
-    animate_path: str = "",
 ) -> np.ndarray:
     """Run the Dijkstra algorithm for the supplied arrays.
 
@@ -101,11 +71,6 @@ def optimise(
         on-grid point. Values of 0 imply that cell is part of an MV grid line.
     """
 
-    if jupyter or animate or affine or animate_path:
-        print(
-            "Warning: the following parameters are ignored: jupyter, animate, affine, animate_path"  # NoQA
-        )
-
     shape = costs.shape
     max_i = shape[0]
     max_j = shape[1]
@@ -116,7 +81,7 @@ def optimise(
 
     dist[start] = 0
 
-    queue: List[Tuple[float, Loc]] = [(0.0, start)]
+    queue: list[tuple[float, Loc]] = [(0.0, start)]
     heapify(queue)
 
     counter = 0

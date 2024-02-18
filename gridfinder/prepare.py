@@ -6,12 +6,12 @@ import json
 import os
 from math import sqrt
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import fiona
 import geopandas as gpd
 import numpy as np
-import rasterio
+import rasterio as rs
 from geopandas.geodataframe import GeoDataFrame
 from rasterio import Affine
 from rasterio.features import rasterize
@@ -26,7 +26,7 @@ from gridfinder.util import Loc, Pathy, clip_raster, save_raster
 def clip_rasters(
     folder_in: Pathy,
     folder_out: Pathy,
-    aoi_in: Pathy,
+    aoi: GeoDataFrame,
     debug: bool = False,
 ) -> None:
     """Read continental rasters one at a time, clip to AOI and save
@@ -38,30 +38,28 @@ def clip_rasters(
     aoi_in : Path to an AOI file (readable by Fiona) to use for clipping.
     """
 
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
+    folder_in = Path(folder_in)
+    folder_out = Path(folder_out)
 
     coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
 
-    for file_path in os.listdir(folder_in):
-        if file_path.endswith(".tif"):
+    for file_path in folder_in.iterdir():
+        if file_path.suffix == ".tif":
             if debug:
                 print(f"Doing {file_path}")
-            ntl_rd = rasterio.open(os.path.join(folder_in, file_path))
-            ntl, affine = mask(dataset=ntl_rd, shapes=coords, crop=True, nodata=0)
+            with rs.open(file_path) as ds:
+                ntl, affine = mask(dataset=ds, shapes=coords, crop=True, nodata=0)
 
             if ntl.ndim == 3:
                 ntl = ntl[0]
 
-            save_raster(Path(folder_out) / file_path, ntl, affine)
+            save_raster(folder_out / file_path.name, ntl, affine)
 
 
 def merge_rasters(
     folder: Pathy,
     percentile: int = 70,
-) -> Tuple[np.ndarray, Optional[Affine]]:
+) -> tuple[np.ndarray, Affine]:
     """Merge a set of monthly rasters keeping the nth percentile value.
 
     Used to remove transient features from time-series data.
@@ -83,7 +81,7 @@ def merge_rasters(
 
     for file in os.listdir(folder):
         if file.endswith(".tif"):
-            ntl_rd = rasterio.open(os.path.join(folder, file))
+            ntl_rd = rs.open(os.path.join(folder, file))
             rasters.append(ntl_rd.read(1))
 
             if not affine:
@@ -93,6 +91,8 @@ def merge_rasters(
 
     raster_merged = np.percentile(raster_arr, percentile, axis=0)
 
+    if not isinstance(affine, Affine):
+        raise Exception("No affine found")
     return raster_merged, affine
 
 
@@ -125,7 +125,7 @@ def prepare_ntl(
     ntl_filter: Optional[np.ndarray] = None,
     threshold: float = 0.1,
     upsample_by: int = 2,
-) -> Tuple[np.ndarray, Affine]:
+) -> tuple[np.ndarray, Affine]:
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
 
@@ -154,7 +154,7 @@ def prepare_ntl(
     if ntl_filter is None:
         ntl_filter = create_filter()
 
-    ntl_big = rasterio.open(ntl_in)
+    ntl_big = rs.open(ntl_in)
 
     coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
     ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
@@ -183,7 +183,7 @@ def prepare_ntl(
         affine.f,
     )
     with fiona.Env():
-        with rasterio.Env():
+        with rs.Env():
             reproject(
                 ntl_filtered,
                 ntl_interp,
@@ -207,7 +207,7 @@ def prepare_ntl(
 def drop_zero_pop(
     targets_in: Pathy,
     pop_in: Pathy,
-    aoi: Union[Pathy, GeoDataFrame],
+    aoi: GeoDataFrame,
 ) -> np.ndarray:
     """Drop electrified cells with no other evidence of human activity.
 
@@ -222,21 +222,19 @@ def drop_zero_pop(
     Array with zero population sites dropped.
     """
 
-    aoi_gdf = gpd.read_file(aoi) if isinstance(aoi, (str, Path)) else aoi
-
     # Clip population layer to AOI
-    clipped, affine, crs = clip_raster(pop_in, aoi_gdf)
+    clipped, affine, crs = clip_raster(pop_in, aoi)
 
     # We need to warp the population layer to exactly overlap with targets
     # First get array, affine and crs from targets (which is what we)
-    targets_rd = rasterio.open(targets_in)
-    targets = targets_rd.read(1)
+    with rs.open(targets_in) as ds:
+        targets = ds.read(1)
+        dest_affine = ds.transform
+        dest_crs = ds.crs
     ghs_proj = np.empty_like(targets)
-    dest_affine = targets_rd.transform
-    dest_crs = targets_rd.crs
 
     # Then use reproject
-    with rasterio.Env():
+    with rs.Env():
         reproject(
             source=clipped,
             destination=ghs_proj,
@@ -296,37 +294,26 @@ def drop_zero_pop(
 
 
 def prepare_roads(
-    roads_in: Pathy,
-    aoi_in: Union[Pathy, GeoDataFrame],
-    ntl_in: Pathy,
+    roads: GeoDataFrame,
+    aoi: GeoDataFrame,
+    shape: tuple[int, int],
+    affine: Affine,
     nodata: float = 1,
-) -> Tuple[np.ndarray, Affine]:
+) -> np.ndarray:
     """Prepare a roads feature layer for use in algorithm.
 
     Parameters
     ----------
-    roads_in : Path to a roads feature layer. This implementation is specific to
+    roads: Roads feature layer. This implementation is specific to
         OSM data and won't assign proper weights to other data inputs.
-    aoi_in : AOI to clip roads.
-    ntl_in : Path to a raster file, only used for correct shape and
-        affine of roads raster.
+    aoi: AOI to clip roads.
+    shape: shape of resultant raster
+    affine: affine of resultant raster
 
     Returns
     -------
     roads_raster : Roads as a raster array with the value being the cost of traversing.
-    affine : Affine raster transformation for the new raster (same as ntl_in).
     """
-
-    ntl_rd = rasterio.open(ntl_in)
-    shape = ntl_rd.read(1).shape
-    affine = ntl_rd.transform
-
-    if isinstance(aoi_in, gpd.GeoDataFrame):
-        aoi = aoi_in
-    else:
-        aoi = gpd.read_file(aoi_in)
-
-    roads = gpd.read_file(roads_in)
 
     roads["weight"] = 1.0
     roads.loc[roads["highway"] == "motorway", "weight"] = 1 / 10
@@ -342,13 +329,15 @@ def prepare_roads(
     if "power" in roads:
         roads.loc[roads["power"] == "line", "weight"] = 0
 
-    roads = roads[roads.weight != 1]
+    roads = roads.loc[roads.weight != 1]
 
     # sort by weight descending so that lower weight (bigger roads) are
     # processed last and overwrite higher weight roads
-    roads = roads.sort_values(by="weight", ascending=False)
+    roads_sorted = roads.sort_values(by="weight", ascending=False)
 
-    roads_for_raster = [(row.geometry, row.weight) for _, row in roads.iterrows()]
+    roads_for_raster = [
+        (row.geometry, row.weight) for _, row in roads_sorted.iterrows()
+    ]
     rast = rasterize(
         roads_for_raster,
         out_shape=shape,
@@ -360,7 +349,7 @@ def prepare_roads(
 
     # Clip resulting raster by the AOI
     if not aoi.crs == roads.crs:
-        aoi: GeoDataFrame = aoi.to_crs(crs=roads.crs)  # type: ignore
+        aoi = aoi.to_crs(crs=roads.crs)  # type: ignore
     coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
 
     with MemoryFile() as f:
@@ -381,4 +370,4 @@ def prepare_roads(
     if len(clipped.shape) >= 3:
         clipped = clipped[0]
 
-    return clipped, affine
+    return clipped
