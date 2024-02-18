@@ -40,6 +40,11 @@ pip install -e '.[dev]'
 make lint
 ```
 
+### Typecheck
+```bash
+make check
+```
+
 ### Testing
 ```bash
 make test
