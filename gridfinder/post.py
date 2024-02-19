@@ -34,11 +34,16 @@ def threshold(dists_in: Pathy, cutoff: float = 0.0) -> tuple[np.ndarray, Affine]
         dists_r = ds.read(1)
         affine = ds.transform
 
-    guess = dists_r.copy()
-    guess[dists_r > cutoff] = 0
-    guess[dists_r <= cutoff] = 1
+    guess = threshold_arr(dists_r, cutoff)
 
     return guess, affine
+
+
+def threshold_arr(dists: np.ndarray, cutoff: float = 0.0) -> np.ndarray:
+    guess = dists.copy()
+    guess[dists > cutoff] = 0
+    guess[dists <= cutoff] = 1
+    return guess
 
 
 def thin(guess_in: Pathy) -> tuple[np.ndarray, Affine]:
