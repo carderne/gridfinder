@@ -1,10 +1,7 @@
-"""
-Utility module used internally.
-"""
+from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, Union
 
 import numpy as np
 import rasterio as rs
@@ -13,7 +10,7 @@ from geopandas import GeoDataFrame
 from pyproj import Proj
 from rasterio.mask import mask
 
-Pathy = Union[str, Path]
+Pathy = str | Path
 
 Loc = tuple[int, int]
 
@@ -22,7 +19,7 @@ def save_raster(
     path: Pathy,
     raster: np.ndarray,
     affine: Affine,
-    crs: Optional[Union[str, Proj]] = None,
+    crs: str | Proj | None = None,
     nodata: int = 0,
 ) -> None:
     """Save a raster to the specified file.

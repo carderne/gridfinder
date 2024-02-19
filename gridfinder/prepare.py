@@ -1,12 +1,9 @@
-"""
-Prepare input layers for gridfinder.
-"""
+from __future__ import annotations
 
 import json
 import os
 from math import sqrt
 from pathlib import Path
-from typing import Optional
 
 import fiona
 import geopandas as gpd
@@ -122,7 +119,7 @@ def create_filter() -> np.ndarray:
 def prepare_ntl(
     ntl_in: Pathy,
     aoi_in: Pathy,
-    ntl_filter: Optional[np.ndarray] = None,
+    ntl_filter: np.ndarray | None = None,
     threshold: float = 0.1,
     upsample_by: int = 2,
 ) -> tuple[np.ndarray, Affine]:

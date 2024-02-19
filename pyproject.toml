@@ -78,6 +78,7 @@ line-length = 88
 exclude = []
 
 [tool.ruff.lint]
+ignore-init-module-imports = true
 select = [
     "F",
     "E",
@@ -100,4 +101,4 @@ reportMissingImports = true
 reportMissingParameterType = true
 reportUnnecessaryTypeIgnoreComment = true
 reportDeprecated = true
-pythonVersion = "3.9"
+pythonVersion = "3.10"

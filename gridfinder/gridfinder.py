@@ -1,6 +1,4 @@
-"""
-Implements Dijkstra's algorithm on a cost-array to create an MST.
-"""
+from __future__ import annotations
 
 from heapq import heapify, heappop, heappush
 from math import sqrt

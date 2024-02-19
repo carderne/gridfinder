@@ -1,17 +1,35 @@
-"""
-gridfinder package contains the following modules:
-
- - _util.py : helper functions used internally
- - gridfinder.py : main implementation of Dijkstra's algorithm
- - post.py : postprocess the algorithm output and check accuracy
- - prepare.py : transforming input data into the cost and targets arrays
-"""
-
 from importlib.metadata import version
 
-from .gridfinder import *  # NoQA
-from .post import *  # NoQA
-from .prepare import *  # NoQA
-from .util import *  # NoQA
+from gridfinder.gridfinder import get_targets_costs, optimise
+from gridfinder.post import accuracy, raster_to_lines, thin, threshold, threshold_arr
+from gridfinder.prepare import (
+    clip_rasters,
+    create_filter,
+    drop_zero_pop,
+    filter_func,
+    merge_rasters,
+    prepare_ntl,
+    prepare_roads,
+)
+from gridfinder.util import clip_raster, save_raster
 
 __version__ = version("gridfinder")
+
+__all__ = [
+    "get_targets_costs",
+    "optimise",
+    "threshold",
+    "threshold_arr",
+    "thin",
+    "raster_to_lines",
+    "accuracy",
+    "clip_rasters",
+    "merge_rasters",
+    "filter_func",
+    "create_filter",
+    "prepare_ntl",
+    "drop_zero_pop",
+    "prepare_roads",
+    "save_raster",
+    "clip_raster",
+]
