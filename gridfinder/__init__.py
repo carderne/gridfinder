@@ -1,7 +1,14 @@
 from importlib.metadata import version
 
 from gridfinder.gridfinder import get_targets_costs, optimise
-from gridfinder.post import accuracy, raster_to_lines, thin, threshold, threshold_arr
+from gridfinder.post import (
+    accuracy,
+    raster_to_lines,
+    thin,
+    thin_arr,
+    threshold,
+    threshold_arr,
+)
 from gridfinder.prepare import (
     clip_rasters,
     create_filter,
@@ -21,6 +28,7 @@ __all__ = [
     "threshold",
     "threshold_arr",
     "thin",
+    "thin_arr",
     "raster_to_lines",
     "accuracy",
     "clip_rasters",

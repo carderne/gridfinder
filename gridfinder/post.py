@@ -59,11 +59,15 @@ def thin(guess_in: Pathy) -> tuple[np.ndarray, Affine]:
     with rs.open(guess_in) as ds:
         guess_arr = ds.read(1)
         affine = ds.transform
-
-    guess_skel = skeletonize(guess_arr)
-    guess_skel = guess_skel.astype("int32")
-
+    guess_skel = thin_arr(guess_arr)
     return guess_skel, affine
+
+
+def thin_arr(guess: np.ndarray) -> np.ndarray:
+    guess_skel = skeletonize(guess)
+    guess_skel = guess_skel.astype("int32")
+    return guess_skel
+
 
 
 def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
