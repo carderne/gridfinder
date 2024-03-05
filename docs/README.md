@@ -1,3 +1,5 @@
-# gridfinder-viz
+# gridfinder website
 
+```
 light-server -s ./ -b localhost
+```
