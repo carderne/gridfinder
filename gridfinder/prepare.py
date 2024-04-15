@@ -121,7 +121,6 @@ def prepare_ntl(
     aoi_in: Pathy,
     ntl_filter: np.ndarray | None = None,
     threshold: float = 0.1,
-    upsample_by: int = 2,
 ) -> tuple[np.ndarray, Affine]:
     """Convert the supplied NTL raster and output an array of electrified cells
     as targets for the algorithm.
@@ -133,9 +132,6 @@ def prepare_ntl(
     ntl_filter : The filter will be convolved over the raster.
     threshold : The threshold to apply after filtering, values above
         are considered electrified.
-    upsample_by : The factor by which to upsample the input raster, applied to both axes
-        (so a value of 2 results in a raster 4 times bigger). This is to
-        allow the roads detail to be captured in higher resolution.
 
     Returns
     -------
@@ -148,13 +144,15 @@ def prepare_ntl(
     else:
         aoi = gpd.read_file(aoi_in)
 
+    aoi_buff = aoi.buffer(0.1)
+    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
+    coords_buff = [json.loads(aoi_buff.to_json())["features"][0]["geometry"]]
+
     if ntl_filter is None:
         ntl_filter = create_filter()
 
-    ntl_big = rs.open(ntl_in)
-
-    coords = [json.loads(aoi.to_json())["features"][0]["geometry"]]
-    ntl, affine = mask(dataset=ntl_big, shapes=coords, crop=True, nodata=0)
+    with rs.open(ntl_in) as ds:
+        ntl, affine = mask(dataset=ds, shapes=coords_buff, crop=True, nodata=0)
 
     if ntl.ndim == 3:
         ntl = ntl[0]
@@ -162,43 +160,30 @@ def prepare_ntl(
     ntl_convolved = signal.convolve2d(ntl, ntl_filter, mode="same")
     ntl_filtered = ntl - ntl_convolved
 
-    ntl_interp = np.empty(
-        shape=(
-            1,  # same number of bands
-            round(ntl.shape[0] * upsample_by),
-            round(ntl.shape[1] * upsample_by),
-        )
-    )
-
-    # adjust the new affine transform to the 150% smaller cell size
-    newaff = Affine(
-        affine.a / upsample_by,
-        affine.b,
-        affine.c,
-        affine.d,
-        affine.e / upsample_by,
-        affine.f,
-    )
-    with fiona.Env():
-        with rs.Env():
-            reproject(
-                ntl_filtered,
-                ntl_interp,
-                src_transform=affine,
-                dst_transform=newaff,
-                src_crs={"init": "epsg:4326"},
-                dst_crs={"init": "epsg:4326"},
-                resampling=Resampling.bilinear,
-            )
-
-    ntl_interp = ntl_interp[0]
-
-    ntl_thresh = np.empty_like(ntl_interp)
-    ntl_thresh[:] = ntl_interp[:]
+    ntl_thresh = np.empty_like(ntl_filtered)
+    ntl_thresh[:] = ntl_filtered[:]
     ntl_thresh[ntl_thresh < threshold] = 0
     ntl_thresh[ntl_thresh >= threshold] = 1
 
-    return ntl_thresh, newaff
+    with MemoryFile() as f:
+        with f.open(
+            transform=affine,
+            driver="GTiff",
+            height=ntl_thresh.shape[0],
+            width=ntl_thresh.shape[1],
+            count=1,
+            dtype=ntl_thresh.dtype,
+            crs=aoi.crs,
+            nodata=0,
+        ) as ds:
+            ds.write(ntl_thresh, 1)
+        with f.open() as ds:
+            clipped, affine = mask(dataset=ds, shapes=coords, crop=True, nodata=0)
+
+    if len(clipped.shape) >= 3:
+        clipped = clipped[0]
+
+    return clipped, affine
 
 
 def drop_zero_pop(
