@@ -77,19 +77,16 @@ def clip_raster(
     crs : form {'init': 'epsg:4326'}
     """
 
-    raster_ds = rs.open(raster)
-    raster_crs = raster_ds.crs
+    with rs.open(raster) as ds:
+        raster_crs = ds.crs
+        if not (boundary.crs == raster_crs or boundary.crs == raster_crs.data):
+            boundary = boundary.to_crs(crs=raster_crs)  # type: ignore
+        coords = [json.loads(boundary.to_json())["features"][0]["geometry"]]
 
-    if not (boundary.crs == raster_crs or boundary.crs == raster_crs.data):
-        boundary = boundary.to_crs(crs=raster_crs)  # type: ignore
-    coords = [json.loads(boundary.to_json())["features"][0]["geometry"]]
-
-    # mask/clip the raster using rasterio.mask
-    clipped, affine = mask(dataset=raster_ds, shapes=coords, crop=True)
+        # mask/clip the raster using rasterio.mask
+        clipped, affine = mask(dataset=ds, shapes=coords, crop=True)
 
     if len(clipped.shape) >= 3:
         clipped = clipped[0]
-
-    raster_ds.close()
 
     return clipped, affine, raster_crs
