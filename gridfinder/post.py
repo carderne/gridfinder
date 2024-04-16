@@ -69,7 +69,6 @@ def thin_arr(guess: np.ndarray) -> np.ndarray:
     return guess_skel
 
 
-
 def raster_to_lines(guess_skel_in: Pathy) -> gpd.GeoDataFrame:
     """
     Convert thinned raster to linestring geometry.

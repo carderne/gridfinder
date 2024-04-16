@@ -5,7 +5,6 @@ import os
 from math import sqrt
 from pathlib import Path
 
-import fiona
 import geopandas as gpd
 import numpy as np
 import rasterio as rs
