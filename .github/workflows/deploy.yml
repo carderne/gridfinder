@@ -1,3 +1,5 @@
+name: deploy
+
 on:
   push:
     tags:
@@ -15,8 +17,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install
-        run: pip install '.[dev]'
+      - name: Install requirements
+        run: pip install -r requirements.lock
+
+      - name: Install pytest
+        run: pip install pytest
 
       - name: Test
         run: pytest

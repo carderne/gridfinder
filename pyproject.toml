@@ -1,10 +1,7 @@
-[build-system]
-requires = [
-    "setuptools>=65",
-    "wheel>=0.37.1",
-    "setuptools-scm[toml]>=7.0.5",
-]
-build-backend = "setuptools.build_meta"
+[tool.rye.scripts]
+check = "pyright"
+test = "pytest"
+ex = "./examples/test.sh"
 
 [project]
 name = "gridfinder"
@@ -15,7 +12,7 @@ requires-python = ">=3.9"
 keywords = ["ntl", "electricity", "grid"]
 
 authors = [
-    {name = "Chris Arderne", email="chris@rdrn.me"},
+  {name = "Chris Arderne", email="chris@rdrn.me"},
 ]
 
 dynamic = ["version"]
@@ -49,28 +46,33 @@ dependencies = [
   "Shapely ~= 2.0",
 ]
 
-[project.optional-dependencies]
-dev = [
+[tool.rye]
+managed = true
+dev-dependencies = [
+  "pyright",
+  "pytest",
   "descartes ~= 1.1.0",
   "folium ~= 0.15",
   "matplotlib ~= 3.8",
   "pytest ~= 8.0",
   "ruff ~= 0.2",
   "seaborn ~= 0.13",
+  "jupyterlab ~= 4.1",
 ]
 
 [project.urls]
 homepage = "https://gridfinder.rdrn.me"
 repository = "https://github.com/carderne/gridfinder"
 
-[tool.setuptools]
-include-package-data = false
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
-[tool.setuptools.packages.find]
-include = ["gridfinder"]
-exclude = ["docs*", "tests*"]
+[tool.pdm.build]
+includes = ["gridfinder/"]
 
-[tool.setuptools_scm]
+[tool.pdm.version]
+source = "scm"
 
 [tool.ruff]
 target-version = "py39"
@@ -96,6 +98,8 @@ select = [
 known-first-party = ["gridfinder"]
 
 [tool.pyright]
+venvPath = "."
+venv = ".venv"
 include = ["gridfinder", "tests"]
 reportMissingImports = true
 reportMissingParameterType = true
