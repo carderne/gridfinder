@@ -32,20 +32,13 @@ Download or clone the repository and install the required packages (preferably i
 ```bash
 git clone https://github.com/carderne/gridfinder.git
 cd gridfinder
-pip install -e '.[dev]'
+rye sync
 ```
 
-### Linting
+Useful commands:
 ```bash
-make lint
-```
-
-### Typecheck
-```bash
-make check
-```
-
-### Testing
-```bash
-make test
+rye fmt
+rye lint
+rye run check  # type check
+rye run test
 ```
